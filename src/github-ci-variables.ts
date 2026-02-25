@@ -3,22 +3,8 @@
  * @see {https://docs.github.com/en/actions/reference/workflows-and-actions/variables}
  */
 
+import type { CIDetectionOptions } from "./ci.js";
 import { getEnv } from "./env.js";
-
-/**
- * Options for CI detection utilities
- */
-export type CIDetectionOptions = {
-  /**
-   * Allow override detection for testing purposes
-   */
-  env?: Record<string, string | undefined>;
-
-  /**
-   * Strict mode - only return true if absolutely certain
-   */
-  strict?: boolean;
-};
 
 /**
  * Detects if running inside GitHub Actions
