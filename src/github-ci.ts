@@ -490,3 +490,51 @@ export function getGithubJob(options?: CIDetectionOptions): string | undefined {
   const env = getEnv(options);
   return env["GITHUB_JOB"];
 }
+
+/**
+ * Gets the path to the file used for setting the current step's outputs via workflow commands.
+ *
+ * GitHub Actions sets the `GITHUB_OUTPUT` environment variable which contains:
+ * - The absolute path to a unique file for the current step (e.g., "/home/runner/work/_temp/_runner_file_commands/set_output_a50ef383-b063-46d9-9157-57953fc9f3f0")
+ * - The path is unique to each step and changes for every step in a job
+ * - Used to share data between steps by writing key-value pairs in the format `key=value` to this file
+ * - Replaces the deprecated `::set-output::` workflow command for setting outputs
+ *
+ * @example
+ * ```typescript
+ * import { writeFileSync } from "fs";
+ *
+ * const outputFile = getGithubOutput();
+ * if (outputFile) {
+ *   // Set an output variable for subsequent steps
+ *   writeFileSync(outputFile, "result=success\n", { flag: "a" });
+ *   writeFileSync(outputFile, "version=1.2.3\n", { flag: "a" });
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { appendFileSync } from "fs";
+ *
+ * // Set multiple outputs for use in subsequent steps
+ * const setOutput = (name: string, value: string) => {
+ *   const file = getGithubOutput();
+ *   if (file) {
+ *     appendFileSync(file, `${name}=${value}\n`);
+ *   }
+ * };
+ *
+ * setOutput("build_status", "passed");
+ * setOutput("artifact_path", "/dist/app.zip");
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The path to the step's output file, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubOutput(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_OUTPUT"];
+}
