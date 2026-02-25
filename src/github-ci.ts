@@ -1485,3 +1485,80 @@ export function getRunnerEnvironment(
   }
   return undefined;
 }
+
+/**
+ * Gets the name of the runner executing the job.
+ *
+ * GitHub Actions sets the `RUNNER_NAME` environment variable to the name of the
+ * runner executing the current job (e.g., "Hosted Agent", "my-self-hosted-runner").
+ * Note that this name may not be unique within a workflow run, as multiple runners
+ * at the repository or organization level could share the same name. Use this for
+ * logging, debugging, or identifying which specific runner instance executed a job.
+ *
+ * @example
+ * ```typescript
+ * const runnerName = getRunnerName();
+ * if (runnerName) {
+ *   console.log(`Running on: ${runnerName}`);
+ *   // "Running on: Hosted Agent"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const runnerName = getRunnerName();
+ * const environment = getRunnerEnvironment();
+ * const logEntry = runnerName
+ *   ? `[${environment}] Job executed on runner: ${runnerName}`
+ *   : "[unknown runner]";
+ * // Combine with environment for detailed logging
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The runner name as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getRunnerName(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["RUNNER_NAME"];
+}
+
+/**
+ * Gets the operating system of the runner executing the job.
+ *
+ * GitHub Actions sets the `RUNNER_OS` environment variable to the operating
+ * system of the runner (e.g., "Linux", "Windows", "macOS"). Possible values
+ * are Linux, Windows, or macOS. Use this to conditionally execute OS-specific
+ * commands, handle path separators, or adjust behavior based on the platform.
+ *
+ * @example
+ * ```typescript
+ * const os = getRunnerOs();
+ * if (os) {
+ *   console.log(`Runner OS: ${os}`);
+ *   // "Runner OS: Linux"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const os = getRunnerOs();
+ * const pathSeparator = os === "Windows" ? "\\" : "/";
+ * const scriptExtension = os === "Windows" ? ".bat" : ".sh";
+ * // Adjust file paths and scripts based on the operating system
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The runner OS as a string ("Linux" | "Windows" | "macOS"), or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getRunnerOs(
+  options?: CIDetectionOptions,
+): "Linux" | "Windows" | "macOS" | undefined {
+  const env = getEnv(options);
+  const os = env["RUNNER_OS"];
+  if (os === "Linux" || os === "Windows" || os === "macOS") {
+    return os;
+  }
+  return undefined;
+}
