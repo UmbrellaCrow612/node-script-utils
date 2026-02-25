@@ -3,6 +3,7 @@
  * @see {https://docs.github.com/en/actions/reference/workflows-and-actions/variables}
  */
 
+import type { EventPayloadMap } from "@octokit/webhooks-types";
 import type { CIDetectionOptions } from "./ci.js";
 import { getEnv } from "./env.js";
 
@@ -242,82 +243,14 @@ export function getGithubEnv(options?: CIDetectionOptions): string | undefined {
 }
 
 /**
- * All possible event names that can trigger a GitHub Actions workflow.
- *
- * @see {https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows}
- */
-export type GithubEventName =
-  | "branch_protection_rule"
-  | "check_run"
-  | "check_suite"
-  | "create"
-  | "delete"
-  | "deployment"
-  | "deployment_status"
-  | "discussion"
-  | "discussion_comment"
-  | "fork"
-  | "gollum"
-  | "image_version"
-  | "issue_comment"
-  | "issues"
-  | "label"
-  | "merge_group"
-  | "milestone"
-  | "page_build"
-  | "public"
-  | "pull_request"
-  | "pull_request_comment"
-  | "pull_request_review"
-  | "pull_request_review_comment"
-  | "pull_request_target"
-  | "push"
-  | "registry_package"
-  | "release"
-  | "repository_dispatch"
-  | "schedule"
-  | "status"
-  | "watch"
-  | "workflow_call"
-  | "workflow_dispatch"
-  | "workflow_run";
-
-/**
  * Gets the name of the event that triggered the workflow.
  *
  * Common event names include:
  * - `push` - When commits are pushed to a branch or tag
  * - `pull_request` - When a pull request is opened, synchronized, or closed
  * - `pull_request_target` - When a PR targets the base repository (runs in base context)
- * - `workflow_dispatch` - When manually triggered via GitHub UI, CLI, or API
- * - `schedule` - When triggered by a cron schedule
- * - `release` - When a release is published, edited, or deleted
- * - `issue_comment` - When a comment is added to an issue or pull request
- * - `issues` - When an issue is opened, edited, labeled, or closed
- * - `create` - When a branch or tag is created
- * - `delete` - When a branch or tag is deleted
- * - `fork` - When a repository is forked
- * - `star` - When a repository is starred
- * - `watch` - When someone starts watching a repository
- * - `workflow_run` - When another workflow completes
- * - `workflow_call` - When a reusable workflow is called
- * - `check_run` - When a check run is created or completed
- * - `check_suite` - When a check suite is completed
- * - `deployment` - When a deployment is created
- * - `deployment_status` - When a deployment status changes
- * - `discussion` - When a discussion is created or modified
- * - `merge_group` - When a pull request is added to a merge queue
- * - `gollum` - When a wiki page is created or updated
- * - `label` - When a label is created, edited, or deleted
- * - `milestone` - When a milestone is created or closed
- * - `page_build` - When a GitHub Pages site is built
- * - `public` - When a repository is made public
- * - `registry_package` - When a package is published or updated
- * - `repository_dispatch` - When triggered via REST API
- * - `status` - When a commit status changes
- * - `branch_protection_rule` - When branch protection rules change
- * - `secret_scanning_alert` - When a secret is detected in the repository
- *
+ * - etc
+ * 
  * @example
  * ```typescript
  * const eventName = getGithubEventName();
@@ -334,9 +267,9 @@ export type GithubEventName =
  */
 export function getGithubEventName(
   options?: CIDetectionOptions,
-): GithubEventName | undefined {
+): keyof EventPayloadMap | undefined {
   const env = getEnv(options);
-  return env["GITHUB_EVENT_NAME"] as GithubEventName | undefined;
+  return env["GITHUB_EVENT_NAME"] as keyof EventPayloadMap | undefined;
 }
 
 /**
