@@ -709,3 +709,35 @@ export function getGithubRefName(
   const env = getEnv(options);
   return env["GITHUB_REF_NAME"];
 }
+
+/**
+ * Checks if the Git ref that triggered the workflow has branch protections or rulesets configured.
+ *
+ * GitHub Actions sets the `GITHUB_REF_PROTECTED` environment variable to "true" when
+ * the branch or tag that triggered the workflow has protections enabled (branch protection
+ * rules or rulesets). Returns "false" or is unset if no protections are configured.
+ *
+ * @example
+ * ```typescript
+ * if (isRefProtected()) {
+ *   console.log("Running on a protected branch - extra safeguards active");
+ *   // Require additional approvals, skip destructive operations, etc.
+ * } else {
+ *   console.log("No branch protections detected");
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const isProtected = isRefProtected();
+ * const deploymentTarget = isProtected ? "production" : "staging";
+ * // Route protected branch deployments to production environment
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns `true` if the ref has protections/rulesets, `false` if not or if not running in GitHub Actions
+ */
+export function isRefProtected(options?: CIDetectionOptions): boolean {
+  const env = getEnv(options);
+  return env["GITHUB_REF_PROTECTED"] === "true";
+}
