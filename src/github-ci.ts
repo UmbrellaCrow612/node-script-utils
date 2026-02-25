@@ -416,3 +416,77 @@ export function getGithubGraphqlUrl(
   const env = getEnv(options);
   return env["GITHUB_GRAPHQL_URL"];
 }
+
+/**
+ * Gets the head ref or source branch of the pull request in a workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_HEAD_REF` environment variable which contains:
+ * - The source branch name for pull request events (e.g., "feature-branch-1")
+ * - Only set when the triggering event is `pull_request` or `pull_request_target`
+ * - Empty or undefined for other event types (push, release, etc.)
+ *
+ * @example
+ * ```typescript
+ * const headRef = getGithubHeadRef();
+ * if (headRef) {
+ *   console.log(`Pull request source branch: ${headRef}`);
+ *   // Outputs: "feature-branch-1"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // In a pull request workflow
+ * const sourceBranch = getGithubHeadRef();
+ * const targetBranch = getGithubBaseRef();
+ * console.log(`Merging ${sourceBranch} into ${targetBranch}`);
+ * // Outputs: "Merging feature-branch-1 into main"
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The head ref/source branch name, or `undefined` if not running in GitHub Actions,
+ *          not a pull request event, or if the variable is not set
+ */
+export function getGithubHeadRef(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_HEAD_REF"];
+}
+
+/**
+ * Gets the job_id of the current job running in GitHub Actions.
+ *
+ * GitHub Actions sets the `GITHUB_JOB` environment variable which contains:
+ * - The identifier of the current job as defined in the workflow YAML (e.g., "greeting_job")
+ * - Useful for logging, debugging, or conditionally executing logic based on specific jobs
+ * - Consistent across all job steps within the same job execution
+ *
+ * @example
+ * ```typescript
+ * const jobId = getGithubJob();
+ * if (jobId) {
+ *   console.log(`Current job: ${jobId}`);
+ *   // Outputs: "greeting_job"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Conditional logic based on job ID
+ * const currentJob = getGithubJob();
+ * if (currentJob === "build_job") {
+ *   await runBuildSteps();
+ * } else if (currentJob === "test_job") {
+ *   await runTestSteps();
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The job_id of the current job, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubJob(options?: CIDetectionOptions): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_JOB"];
+}
