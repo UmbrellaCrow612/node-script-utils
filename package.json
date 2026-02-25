@@ -1,6 +1,6 @@
 {
   "name": "node-github-actions",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Zero-dependency utilities for detecting and working with GitHub Actions environments, featuring type-safe platform checks, streamlined workflow automation helpers, and lightweight CI/CD integration tools for Node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
