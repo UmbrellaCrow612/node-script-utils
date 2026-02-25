@@ -160,3 +160,33 @@ export function getGithubActorId(
   const env = getEnv(options);
   return env["GITHUB_ACTOR_ID"];
 }
+
+/**
+ * Gets the GitHub API URL.
+ *
+ * This environment variable returns the base URL for the GitHub API.
+ * For GitHub.com, this is https://api.github.com. For GitHub Enterprise Server,
+ * this will be the API URL of the enterprise instance.
+ *
+ * @see {https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#default-environment-variables}
+ *
+ * @example
+ * ```typescript
+ * const apiUrl = getGithubApiUrl();
+ * if (apiUrl) {
+ *   console.log(`GitHub API: ${apiUrl}`);
+ *   // Outputs: "https://api.github.com"
+ *   // Outputs: "https://github.my-enterprise.com/api/v3"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The GitHub API URL, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubApiUrl(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_API_URL"];
+}
