@@ -791,25 +791,32 @@ export function getGithubRefType(
  * ```typescript
  * const repo = getGithubRepository();
  * if (repo) {
- *   const [owner, name] = repo.split("/");
- *   console.log(`Owner: ${owner}, Repo: ${name}`);
- *   // Owner: octocat, Repo: Hello-World
+ *   console.log(repo.owner, repo.name);
+ *   // "octocat", "Hello-World"
  * }
  * ```
  *
  * @example
  * ```typescript
  * const repo = getGithubRepository();
- * const apiUrl = repo ? `https://api.github.com/repos/${repo}/issues` : undefined;
- * // Construct API URLs dynamically based on current repository
+ * const apiUrl = repo
+ *   ? `https://api.github.com/repos/${repo.owner}/${repo.name}/issues`
+ *   : undefined;
  * ```
  *
  * @param options - Optional CI detection options
- * @returns The repository identifier in "owner/name" format, or `undefined` if not running in GitHub Actions or if the variable is not set
+ * @returns `{ owner, name }` or `undefined` if not running in GitHub Actions
  */
 export function getGithubRepository(
   options?: CIDetectionOptions,
-): string | undefined {
+): { owner: string; name: string } | undefined {
   const env = getEnv(options);
-  return env["GITHUB_REPOSITORY"];
+  const raw = env["GITHUB_REPOSITORY"];
+
+  if (!raw) return undefined;
+
+  const [owner, name] = raw.split("/");
+  if (!owner || !name) return undefined;
+
+  return { owner, name };
 }
