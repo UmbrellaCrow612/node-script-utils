@@ -538,3 +538,56 @@ export function getGithubOutput(
   const env = getEnv(options);
   return env["GITHUB_OUTPUT"];
 }
+
+/**
+ * Gets the path to the file used for adding system PATH entries via workflow commands.
+ *
+ * GitHub Actions sets the `GITHUB_PATH` environment variable which contains:
+ * - The absolute path to a unique file for the current step (e.g., "/home/runner/work/_temp/_runner_file_commands/add_path_899b9445-ad4a-400c-aa89-249f18632cf5")
+ * - The path is unique to each step and changes for every step in a job
+ * - Used to prepend directories to the system PATH for subsequent steps in the job
+ * - Write directory paths to this file, one per line, to make executables available to later steps
+ * - Replaces the deprecated `::add-path::` workflow command
+ *
+ * @see {@link https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-system-path}
+ *
+ * @example
+ * ```typescript
+ * import { appendFileSync } from "fs";
+ *
+ * const pathFile = getGithubPath();
+ * if (pathFile) {
+ *   // Add a directory to PATH for subsequent steps
+ *   appendFileSync(pathFile, "/opt/my-tool/bin\n");
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { appendFileSync } from "fs";
+ * import { join } from "path";
+ *
+ * // Add multiple directories to PATH
+ * const addToPath = (...dirs: string[]) => {
+ *   const file = getGithubPath();
+ *   if (file) {
+ *     dirs.forEach(dir => appendFileSync(file, `${dir}\n`));
+ *   }
+ * };
+ *
+ * addToPath(
+ *   join(process.cwd(), "node_modules/.bin"),
+ *   "/usr/local/custom-tools"
+ * );
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The path to the step's PATH file, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubPath(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_PATH"];
+}
