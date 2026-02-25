@@ -357,3 +357,34 @@ export function getGithubEventName(
   const env = getEnv(options);
   return env["GITHUB_EVENT_NAME"] as GithubEventName | undefined;
 }
+
+/**
+ * Gets the path to the file on the runner that contains the full event webhook payload.
+ *
+ * This JSON file contains the complete webhook payload that triggered the workflow.
+ * You can read and parse this file to access detailed information about the event.
+ *
+ * @example
+ * ```typescript
+ * import { readFileSync } from "fs";
+ *
+ * const eventPath = getGithubEventPath();
+ * if (eventPath) {
+ *   const eventPayload = JSON.parse(readFileSync(eventPath, "utf8"));
+ *   console.log("Event payload:", eventPayload);
+ *   // Access specific properties like:
+ *   // eventPayload.pull_request.number
+ *   // eventPayload.repository.full_name
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The path to the event payload JSON file, or `undefined` if not running
+ *          in GitHub Actions or if the variable is not set
+ */
+export function getGithubEventPath(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_EVENT_PATH"];
+}
