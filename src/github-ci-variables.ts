@@ -1,0 +1,1549 @@
+/**
+ * GitHub Actions Specific Helpers
+ * @see {https://docs.github.com/en/actions/reference/workflows-and-actions/variables}
+ */
+
+import type { EventPayloadMap } from "@octokit/webhooks-types";
+import type { CIDetectionOptions } from "./ci.js";
+import { getEnv } from "./env.js";
+
+/**
+ * Detects if running inside GitHub Actions
+ *
+ * GitHub Actions sets the `GITHUB_ACTIONS` environment variable to "true"
+ *
+ * @example
+ * ```typescript
+ * if (isInsideGithubAction()) {
+ *   console.log("Running in GitHub Actions");
+ *   const token = getGithubToken(); // Safe to call
+ * }
+ * ```
+ */
+export function isInsideGithubAction(options?: CIDetectionOptions): boolean {
+  const env = getEnv(options);
+  return env["GITHUB_ACTIONS"] === "true";
+}
+
+/**
+ * Gets the name of the action currently running, or the id of a step.
+ *
+ * GitHub Actions sets the `GITHUB_ACTION` environment variable which contains:
+ * - For an action: `__repo-owner_name-of-action-repo` (special characters removed)
+ * - For a step running a script without an id: `__run`
+ * - For duplicate scripts/actions in the same job: a suffix with sequence number (e.g., `__run_2`, `actionscheckout2`)
+ *
+ * @example
+ * ```typescript
+ * const actionName = getGithubAction();
+ * if (actionName) {
+ *   console.log(`Running action: ${actionName}`);
+ *   // Outputs: "__run", "__run_2", "__owner_repo-action", "actionscheckout2", etc.
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The action/step identifier, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubAction(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_ACTION"];
+}
+
+/**
+ * Gets the path where an action is located.
+ *
+ * This property is only supported in composite actions. You can use this path
+ * to change directories to where the action is located and access other files
+ * in that same repository.
+ *
+ * @example
+ * ```typescript
+ * const actionPath = getGithubActionPath();
+ * if (actionPath) {
+ *   console.log(`Action located at: ${actionPath}`);
+ *   // Outputs: "/home/runner/work/_actions/repo-owner/name-of-action-repo/v1"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The filesystem path to the action, or `undefined` if not running in
+ *          GitHub Actions, not in a composite action, or if the variable is not set
+ */
+export function getGithubActionPath(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_ACTION_PATH"];
+}
+
+/**
+ * Gets the owner and repository name of the action being executed.
+ *
+ * For a step executing an action, this environment variable contains the owner
+ * and repository name in the format `owner/repo`.
+ *
+ * @example
+ * ```typescript
+ * const actionRepo = getGithubActionRepository();
+ * if (actionRepo) {
+ *   console.log(`Action repository: ${actionRepo}`);
+ *   // Outputs: "actions/checkout"
+ *   // Outputs: "octokit/request-action"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The owner and repository name of the action (e.g., "actions/checkout"),
+ *          or `undefined` if not running in GitHub Actions, not executing an action,
+ *          or if the variable is not set
+ */
+export function getGithubActionRepository(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_ACTION_REPOSITORY"];
+}
+
+/**
+ * Gets the name of the person or app that initiated the workflow.
+ *
+ * This environment variable contains the username of the user or the name of the
+ * app that triggered the workflow run.
+ *
+ * @example
+ * ```typescript
+ * const actor = getGithubActor();
+ * if (actor) {
+ *   console.log(`Workflow triggered by: ${actor}`);
+ *   // Outputs: "octocat"
+ *   // Outputs: "github-actions[bot]"
+ *   // Outputs: "my-github-app"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The username of the actor who triggered the workflow, or `undefined`
+ *          if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubActor(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_ACTOR"];
+}
+
+/**
+ * Gets the account ID of the person or app that triggered the initial workflow run.
+ *
+ * This environment variable contains the unique numeric account ID of the actor.
+ * Note that this is different from the actor username (GITHUB_ACTOR).
+ *
+ * @example
+ * ```typescript
+ * const actorId = getGithubActorId();
+ * if (actorId) {
+ *   console.log(`Actor ID: ${actorId}`);
+ *   // Outputs: "1234567"
+ *   // Outputs: "9876543"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The numeric account ID of the actor as a string, or `undefined`
+ *          if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubActorId(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_ACTOR_ID"];
+}
+
+/**
+ * Gets the GitHub API URL.
+ *
+ * This environment variable returns the base URL for the GitHub API.
+ * For GitHub.com, this is https://api.github.com. For GitHub Enterprise Server,
+ * this will be the API URL of the enterprise instance.
+ *
+ * @example
+ * ```typescript
+ * const apiUrl = getGithubApiUrl();
+ * if (apiUrl) {
+ *   console.log(`GitHub API: ${apiUrl}`);
+ *   // Outputs: "https://api.github.com"
+ *   // Outputs: "https://github.my-enterprise.com/api/v3"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The GitHub API URL, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubApiUrl(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_API_URL"];
+}
+
+/**
+ * Gets the name of the base ref or target branch of the pull request in a workflow run.
+ *
+ * This is only set when the event that triggers a workflow run is either
+ * `pull_request` or `pull_request_target`. For example, `main`.
+ *
+ * @example
+ * ```typescript
+ * const baseRef = getGithubBaseRef();
+ * if (baseRef) {
+ *   console.log(`Target branch: ${baseRef}`);
+ *   // Outputs: "main"
+ *   // Outputs: "develop"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The base ref or target branch name, or `undefined` if not running in
+ *          GitHub Actions, not in a pull request event, or if the variable is not set
+ */
+export function getGithubBaseRef(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_BASE_REF"];
+}
+
+/**
+ * Gets the path on the runner to the file that sets variables from workflow commands.
+ *
+ * The path to this file is unique to the current step and changes for each step
+ * in a job. This file is used to set environment variables that can be passed
+ * to subsequent steps in the workflow.
+ *
+ * @example
+ * ```typescript
+ * const envFilePath = getGithubEnv();
+ * if (envFilePath) {
+ *   console.log(`Env file: ${envFilePath}`);
+ *   // Outputs: "/home/runner/work/_temp/_runner_file_commands/set_env_87406d6e-4979-4d42-98e1-3dab1f48b13a"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The path to the environment file, or `undefined` if not running in
+ *          GitHub Actions or if the variable is not set
+ */
+export function getGithubEnv(options?: CIDetectionOptions): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_ENV"];
+}
+
+/**
+ * Gets the name of the event that triggered the workflow.
+ *
+ * Common event names include:
+ * - `push` - When commits are pushed to a branch or tag
+ * - `pull_request` - When a pull request is opened, synchronized, or closed
+ * - `pull_request_target` - When a PR targets the base repository (runs in base context)
+ * - etc
+ * 
+ * @example
+ * ```typescript
+ * const eventName = getGithubEventName();
+ * if (eventName === "pull_request") {
+ *   console.log("Processing PR");
+ * } else if (eventName === "push") {
+ *   console.log("Processing push");
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The name of the triggering event, or `undefined` if not running in
+ *          GitHub Actions or if the variable is not set
+ */
+export function getGithubEventName(
+  options?: CIDetectionOptions,
+): keyof EventPayloadMap | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_EVENT_NAME"] as keyof EventPayloadMap | undefined;
+}
+
+/**
+ * Gets the path to the file on the runner that contains the full event webhook payload.
+ *
+ * This JSON file contains the complete webhook payload that triggered the workflow.
+ * You can read and parse this file to access detailed information about the event.
+ *
+ * @example
+ * ```typescript
+ * import { readFileSync } from "fs";
+ *
+ * const eventPath = getGithubEventPath();
+ * if (eventPath) {
+ *   const eventPayload = JSON.parse(readFileSync(eventPath, "utf8"));
+ *   console.log("Event payload:", eventPayload);
+ *   // Access specific properties like:
+ *   // eventPayload.pull_request.number
+ *   // eventPayload.repository.full_name
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The path to the event payload JSON file, or `undefined` if not running
+ *          in GitHub Actions or if the variable is not set
+ */
+export function getGithubEventPath(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_EVENT_PATH"];
+}
+
+/**
+ * Gets the GitHub GraphQL API URL.
+ *
+ * This environment variable returns the base URL for the GitHub GraphQL API.
+ * For GitHub.com, this is https://api.github.com/graphql. For GitHub Enterprise Server,
+ * this will be the GraphQL API URL of the enterprise instance.
+ *
+ * @example
+ * ```typescript
+ * const graphqlUrl = getGithubGraphqlUrl();
+ * if (graphqlUrl) {
+ *   console.log(`GitHub GraphQL API: ${graphqlUrl}`);
+ *   // Outputs: "https://api.github.com/graphql"
+ *   // Outputs: "https://github.my-enterprise.com/api/graphql"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The GitHub GraphQL API URL, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubGraphqlUrl(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_GRAPHQL_URL"];
+}
+
+/**
+ * Gets the head ref or source branch of the pull request in a workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_HEAD_REF` environment variable which contains:
+ * - The source branch name for pull request events (e.g., "feature-branch-1")
+ * - Only set when the triggering event is `pull_request` or `pull_request_target`
+ * - Empty or undefined for other event types (push, release, etc.)
+ *
+ * @example
+ * ```typescript
+ * const headRef = getGithubHeadRef();
+ * if (headRef) {
+ *   console.log(`Pull request source branch: ${headRef}`);
+ *   // Outputs: "feature-branch-1"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // In a pull request workflow
+ * const sourceBranch = getGithubHeadRef();
+ * const targetBranch = getGithubBaseRef();
+ * console.log(`Merging ${sourceBranch} into ${targetBranch}`);
+ * // Outputs: "Merging feature-branch-1 into main"
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The head ref/source branch name, or `undefined` if not running in GitHub Actions,
+ *          not a pull request event, or if the variable is not set
+ */
+export function getGithubHeadRef(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_HEAD_REF"];
+}
+
+/**
+ * Gets the job_id of the current job running in GitHub Actions.
+ *
+ * GitHub Actions sets the `GITHUB_JOB` environment variable which contains:
+ * - The identifier of the current job as defined in the workflow YAML (e.g., "greeting_job")
+ * - Useful for logging, debugging, or conditionally executing logic based on specific jobs
+ * - Consistent across all job steps within the same job execution
+ *
+ * @example
+ * ```typescript
+ * const jobId = getGithubJob();
+ * if (jobId) {
+ *   console.log(`Current job: ${jobId}`);
+ *   // Outputs: "greeting_job"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Conditional logic based on job ID
+ * const currentJob = getGithubJob();
+ * if (currentJob === "build_job") {
+ *   await runBuildSteps();
+ * } else if (currentJob === "test_job") {
+ *   await runTestSteps();
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The job_id of the current job, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubJob(options?: CIDetectionOptions): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_JOB"];
+}
+
+/**
+ * Gets the path to the file used for setting the current step's outputs via workflow commands.
+ *
+ * GitHub Actions sets the `GITHUB_OUTPUT` environment variable which contains:
+ * - The absolute path to a unique file for the current step (e.g., "/home/runner/work/_temp/_runner_file_commands/set_output_a50ef383-b063-46d9-9157-57953fc9f3f0")
+ * - The path is unique to each step and changes for every step in a job
+ * - Used to share data between steps by writing key-value pairs in the format `key=value` to this file
+ * - Replaces the deprecated `::set-output::` workflow command for setting outputs
+ *
+ * @example
+ * ```typescript
+ * import { writeFileSync } from "fs";
+ *
+ * const outputFile = getGithubOutput();
+ * if (outputFile) {
+ *   // Set an output variable for subsequent steps
+ *   writeFileSync(outputFile, "result=success\n", { flag: "a" });
+ *   writeFileSync(outputFile, "version=1.2.3\n", { flag: "a" });
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { appendFileSync } from "fs";
+ *
+ * // Set multiple outputs for use in subsequent steps
+ * const setOutput = (name: string, value: string) => {
+ *   const file = getGithubOutput();
+ *   if (file) {
+ *     appendFileSync(file, `${name}=${value}\n`);
+ *   }
+ * };
+ *
+ * setOutput("build_status", "passed");
+ * setOutput("artifact_path", "/dist/app.zip");
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The path to the step's output file, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubOutput(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_OUTPUT"];
+}
+
+/**
+ * Gets the path to the file used for adding system PATH entries via workflow commands.
+ *
+ * GitHub Actions sets the `GITHUB_PATH` environment variable which contains:
+ * - The absolute path to a unique file for the current step (e.g., "/home/runner/work/_temp/_runner_file_commands/add_path_899b9445-ad4a-400c-aa89-249f18632cf5")
+ * - The path is unique to each step and changes for every step in a job
+ * - Used to prepend directories to the system PATH for subsequent steps in the job
+ * - Write directory paths to this file, one per line, to make executables available to later steps
+ * - Replaces the deprecated `::add-path::` workflow command
+ *
+ * @see {@link https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-system-path}
+ *
+ * @example
+ * ```typescript
+ * import { appendFileSync } from "fs";
+ *
+ * const pathFile = getGithubPath();
+ * if (pathFile) {
+ *   // Add a directory to PATH for subsequent steps
+ *   appendFileSync(pathFile, "/opt/my-tool/bin\n");
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { appendFileSync } from "fs";
+ * import { join } from "path";
+ *
+ * // Add multiple directories to PATH
+ * const addToPath = (...dirs: string[]) => {
+ *   const file = getGithubPath();
+ *   if (file) {
+ *     dirs.forEach(dir => appendFileSync(file, `${dir}\n`));
+ *   }
+ * };
+ *
+ * addToPath(
+ *   join(process.cwd(), "node_modules/.bin"),
+ *   "/usr/local/custom-tools"
+ * );
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The path to the step's PATH file, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubPath(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_PATH"];
+}
+
+/**
+ * Gets the fully-formed ref of the branch or tag that triggered the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REF` environment variable which contains:
+ * - For push events: `refs/heads/<branch_name>` or `refs/tags/<tag_name>`
+ * - For pull_request events (not merged): `refs/pull/<pr_number>/merge`
+ * - For pull_request events (merged): `refs/heads/<head_branch>`
+ * - For pull_request_target events: ref from the base branch (e.g., `refs/heads/main`)
+ * - For release events: `refs/tags/<tag_name>`
+ * - Only set if a branch or tag is available for the event type
+ *
+ * Format variations:
+ * - Branches: `refs/heads/<branch_name>` (e.g., "refs/heads/feature-branch-1")
+ * - Tags: `refs/tags/<tag_name>` (e.g., "refs/tags/v1.0.0")
+ * - Pull requests: `refs/pull/<pr_number>/merge` (e.g., "refs/pull/42/merge")
+ *
+ * @example
+ * ```typescript
+ * const ref = getGithubRef();
+ * if (ref) {
+ *   console.log(`Triggered by: ${ref}`);
+ *   // Outputs: "refs/heads/feature-branch-1"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Extract branch or tag name from the ref
+ * const ref = getGithubRef();
+ * if (ref?.startsWith("refs/heads/")) {
+ *   const branchName = ref.replace("refs/heads/", "");
+ *   console.log(`Branch: ${branchName}`);
+ *   // Outputs: "feature-branch-1"
+ * } else if (ref?.startsWith("refs/tags/")) {
+ *   const tagName = ref.replace("refs/tags/", "");
+ *   console.log(`Tag: ${tagName}`);
+ *   // Outputs: "v1.0.0"
+ * } else if (ref?.startsWith("refs/pull/")) {
+ *   console.log("Running in a pull request context");
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Determine event type from ref pattern
+ * const ref = getGithubRef();
+ * const isTag = ref?.startsWith("refs/tags/");
+ * const isBranch = ref?.startsWith("refs/heads/");
+ * const isPullRequest = ref?.startsWith("refs/pull/");
+ *
+ * if (isTag) {
+ *   await deployToProduction();
+ * } else if (isBranch) {
+ *   await runTests();
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The fully-formed ref string, or `undefined` if not running in GitHub Actions,
+ *          if no branch/tag is available for the event type, or if the variable is not set
+ */
+export function getGithubRef(options?: CIDetectionOptions): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_REF"];
+}
+
+/**
+ * Gets the short ref name of the branch or tag that triggered the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REF_NAME` environment variable which contains:
+ * - The human-readable branch or tag name as shown on GitHub (e.g., "feature-branch-1", "v1.0.0")
+ * - For unmerged pull requests: `<pr_number>/merge` (e.g., "42/merge")
+ * - The short version of `GITHUB_REF` without the `refs/heads/`, `refs/tags/`, or `refs/pull/` prefix
+ * - Useful for display purposes, constructing URLs, or referencing resources by simple name
+ *
+ * @example
+ * ```typescript
+ * const refName = getGithubRefName();
+ * if (refName) {
+ *   console.log(`Running on: ${refName}`);
+ *   // Outputs: "feature-branch-1"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Use in deployment naming or artifact versioning
+ * const refName = getGithubRefName();
+ * if (refName) {
+ *   const sanitized = refName.replace(/[^a-zA-Z0-9-]/g, "-");
+ *   const artifactName = `app-${sanitized}.zip`;
+ *   console.log(`Creating artifact: ${artifactName}`);
+ *   // Outputs: "app-feature-branch-1.zip" or "app-42-merge.zip"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Detect if running on a pull request merge branch
+ * const refName = getGithubRefName();
+ * if (refName?.includes("/merge")) {
+ *   const prNumber = refName.split("/")[0];
+ *   console.log(`Testing PR #${prNumber} merge commit`);
+ *   // Outputs: "Testing PR #42 merge commit"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The short ref name, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubRefName(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_REF_NAME"];
+}
+
+/**
+ * Checks if the Git ref that triggered the workflow has branch protections or rulesets configured.
+ *
+ * GitHub Actions sets the `GITHUB_REF_PROTECTED` environment variable to "true" when
+ * the branch or tag that triggered the workflow has protections enabled (branch protection
+ * rules or rulesets). Returns "false" or is unset if no protections are configured.
+ *
+ * @example
+ * ```typescript
+ * if (isRefProtected()) {
+ *   console.log("Running on a protected branch - extra safeguards active");
+ *   // Require additional approvals, skip destructive operations, etc.
+ * } else {
+ *   console.log("No branch protections detected");
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const isProtected = isRefProtected();
+ * const deploymentTarget = isProtected ? "production" : "staging";
+ * // Route protected branch deployments to production environment
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns `true` if the ref has protections/rulesets, `false` if not or if not running in GitHub Actions
+ */
+export function isRefProtected(options?: CIDetectionOptions): boolean {
+  const env = getEnv(options);
+  return env["GITHUB_REF_PROTECTED"] === "true";
+}
+
+/**
+ * Gets the type of Git ref that triggered the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REF_TYPE` environment variable to indicate whether
+ * the workflow was triggered by a branch push or a tag push. Valid values are "branch" or "tag".
+ *
+ * @example
+ * ```typescript
+ * const refType = getGithubRefType();
+ * if (refType === "branch") {
+ *   console.log("Triggered by branch push");
+ *   // Run branch-specific logic
+ * } else if (refType === "tag") {
+ *   console.log("Triggered by tag push");
+ *   // Run release/tag-specific logic
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const refType = getGithubRefType();
+ * const version = refType === "tag" ? getGithubRef()?.replace("refs/tags/", "") : "dev";
+ * // Use tag name as version, fallback to "dev" for branch triggers
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns "branch" | "tag" | `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRefType(
+  options?: CIDetectionOptions,
+): "branch" | "tag" | undefined {
+  const env = getEnv(options);
+  const refType = env["GITHUB_REF_TYPE"];
+  if (refType === "branch" || refType === "tag") {
+    return refType;
+  }
+  return undefined;
+}
+
+/**
+ * Gets the owner and repository name for the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REPOSITORY` environment variable to the full
+ * repository identifier in the format `owner/repo-name` (e.g., "octocat/Hello-World").
+ *
+ * @example
+ * ```typescript
+ * const repo = getGithubRepository();
+ * if (repo) {
+ *   console.log(repo.owner, repo.name);
+ *   // "octocat", "Hello-World"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const repo = getGithubRepository();
+ * const apiUrl = repo
+ *   ? `https://api.github.com/repos/${repo.owner}/${repo.name}/issues`
+ *   : undefined;
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns `{ owner, name }` or `undefined` if not running in GitHub Actions
+ */
+export function getGithubRepository(
+  options?: CIDetectionOptions,
+): { owner: string; name: string } | undefined {
+  const env = getEnv(options);
+  const raw = env["GITHUB_REPOSITORY"];
+
+  if (!raw) return undefined;
+
+  const [owner, name] = raw.split("/");
+  if (!owner || !name) return undefined;
+
+  return { owner, name };
+}
+
+/**
+ * Gets the numeric ID of the repository.
+ *
+ * GitHub Actions sets the `GITHUB_REPOSITORY_ID` environment variable to the unique
+ * numeric identifier of the repository. This is distinct from the repository name
+ * (e.g., 123456789 vs "octocat/Hello-World"). Use this for API calls that require
+ * the repository ID rather than the full name.
+ *
+ * @example
+ * ```typescript
+ * const repoId = getGithubRepositoryId();
+ * if (repoId) {
+ *   console.log(`Repository ID: ${repoId}`);
+ *   // Use in GraphQL queries or legacy API endpoints requiring numeric IDs
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const repoId = getGithubRepositoryId();
+ * const cacheKey = repoId ? `build-cache-${repoId}` : "build-cache-default";
+ * // Create unique cache keys scoped to specific repositories
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The numeric repository ID as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRepositoryId(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_REPOSITORY_ID"];
+}
+
+/**
+ * Gets the repository owner's name from the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REPOSITORY_OWNER` environment variable to the
+ * owner of the repository (e.g., "octocat"). This is the first part of the full
+ * repository identifier `owner/repo-name`.
+ *
+ * @example
+ * ```typescript
+ * const owner = getGithubRepositoryOwner();
+ * if (owner) {
+ *   console.log(`Repository owner: ${owner}`);
+ *   // "Repository owner: octocat"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const owner = getGithubRepositoryOwner();
+ * const apiUrl = owner
+ *   ? `https://api.github.com/users/${owner}/repos`
+ *   : undefined;
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The repository owner name as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRepositoryOwner(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_REPOSITORY_OWNER"];
+}
+
+/**
+ * Gets the repository owner's numeric account ID from the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REPOSITORY_OWNER_ID` environment variable to the
+ * unique numeric identifier of the repository owner (e.g., 1234567). This is
+ * distinct from the owner's name (e.g., "octocat") and remains constant even if
+ * the username changes. Use this for API calls that require the owner ID rather
+ * than the username.
+ *
+ * @example
+ * ```typescript
+ * const ownerId = getGithubRepositoryOwnerId();
+ * if (ownerId) {
+ *   console.log(`Owner ID: ${ownerId}`);
+ *   // "Owner ID: 1234567"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const ownerId = getGithubRepositoryOwnerId();
+ * const apiUrl = ownerId
+ *   ? `https://api.github.com/user/${ownerId}`
+ *   : undefined;
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The numeric owner ID as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRepositoryOwnerId(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_REPOSITORY_OWNER_ID"];
+}
+
+/**
+ * Gets the number of days that workflow run logs and artifacts are retained.
+ *
+ * GitHub Actions sets the `GITHUB_RETENTION_DAYS` environment variable to the
+ * retention period configured for the repository (e.g., 90). This value determines
+ * how long workflow run logs and artifacts are kept before automatic deletion.
+ * Use this to calculate expiration dates or validate retention policies.
+ *
+ * @example
+ * ```typescript
+ * const retentionDays = getGithubRetentionDays();
+ * if (retentionDays) {
+ *   console.log(`Logs retained for ${retentionDays} days`);
+ *   // "Logs retained for 90 days"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const retentionDays = getGithubRetentionDays();
+ * const expirationDate = retentionDays
+ *   ? new Date(Date.now() + parseInt(retentionDays) * 24 * 60 * 60 * 1000)
+ *   : undefined;
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The retention period in days as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRetentionDays(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_RETENTION_DAYS"];
+}
+
+/**
+ * Gets the unique identifier for the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_RUN_ID` environment variable to a unique number
+ * for each workflow run within a repository (e.g., 1658821493). This ID remains
+ * constant even if the workflow run is re-run, making it suitable for identifying
+ * specific workflow executions across retries. Use this for tracking, logging,
+ * or constructing API URLs related to the workflow run.
+ *
+ * @example
+ * ```typescript
+ * const runId = getGithubRunId();
+ * if (runId) {
+ *   console.log(`Workflow run ID: ${runId}`);
+ *   // "Workflow run ID: 1658821493"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const runId = getGithubRunId();
+ * const runUrl = runId
+ *   ? `https://github.com/${owner}/${repo}/actions/runs/${runId}`
+ *   : undefined;
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workflow run ID as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRunId(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_RUN_ID"];
+}
+
+/**
+ * Gets the run number for the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_RUN_NUMBER` environment variable to a unique
+ * number for each run of a particular workflow in a repository (e.g., 3). This
+ * number begins at 1 for the workflow's first run and increments with each new
+ * run. This number remains constant even if the workflow run is re-run. Use this
+ * for sequential versioning, build numbering, or human-readable run identification.
+ *
+ * @example
+ * ```typescript
+ * const runNumber = getGithubRunNumber();
+ * if (runNumber) {
+ *   console.log(`Build #${runNumber}`);
+ *   // "Build #3"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const runNumber = getGithubRunNumber();
+ * const versionTag = runNumber ? `v1.0.${runNumber}` : "v1.0.0";
+ * // Create version tags based on workflow run number
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workflow run number as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRunNumber(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_RUN_NUMBER"];
+}
+
+/**
+ * Gets the URL of the GitHub server.
+ *
+ * GitHub Actions sets the `GITHUB_SERVER_URL` environment variable to the base
+ * URL of the GitHub instance (e.g., "https://github.com" for GitHub.com or
+ * "https://github.mycompany.com" for GitHub Enterprise Server). Use this to
+ * construct API URLs, generate links to resources, or handle both GitHub.com
+ * and Enterprise Server environments dynamically.
+ *
+ * @example
+ * ```typescript
+ * const serverUrl = getGithubServerUrl();
+ * if (serverUrl) {
+ *   console.log(`GitHub server: ${serverUrl}`);
+ *   // "GitHub server: https://github.com"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const serverUrl = getGithubServerUrl();
+ * const apiBaseUrl = serverUrl
+ *   ? `${serverUrl}/api/v3` // GitHub Enterprise
+ *   : "https://api.github.com"; // Fallback to GitHub.com
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The GitHub server URL as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubServerUrl(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_SERVER_URL"];
+}
+
+/**
+ * Gets the commit SHA that triggered the workflow.
+ *
+ * GitHub Actions sets the `GITHUB_SHA` environment variable to the commit SHA
+ * that triggered the workflow run (e.g., "ffac537e6cbbf934b08745a378932722df287a53").
+ * The specific commit referenced depends on the event type that triggered the
+ * workflow. For pull request events, this is the merge commit SHA; for push
+ * events, it is the commit that was pushed. Use this for checking out specific
+ * commits, generating version identifiers, or linking to commit history.
+ *
+ * @example
+ * ```typescript
+ * const sha = getGithubSha();
+ * if (sha) {
+ *   console.log(`Commit SHA: ${sha}`);
+ *   // "Commit SHA: ffac537e6cbbf934b08745a378932722df287a53"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const sha = getGithubSha();
+ * const shortSha = sha ? sha.substring(0, 7) : undefined;
+ * const commitUrl = sha && serverUrl && repo
+ *   ? `${serverUrl}/${repo}/commit/${sha}`
+ *   : undefined;
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The commit SHA as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubSha(options?: CIDetectionOptions): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_SHA"];
+}
+
+/**
+ * Gets the path to the step summary file for workflow commands.
+ *
+ * GitHub Actions sets the `GITHUB_STEP_SUMMARY` environment variable to the path
+ * of a file where job summaries can be written using workflow commands (e.g.,
+ * "/home/runner/_layout/_work/_temp/_runner_file_commands/step_summary_1cb22d7f-5663-41a8-9ffc-13472605c76c").
+ * This path is unique to the current step and changes for each step in a job.
+ * Write Markdown content to this file to add custom summaries that appear in
+ * the GitHub Actions UI. For more information, see Workflow commands for GitHub Actions.
+ *
+ * @example
+ * ```typescript
+ * const summaryPath = getGithubStepSummary();
+ * if (summaryPath) {
+ *   console.log(`Summary file: ${summaryPath}`);
+ *   // "Summary file: /home/runner/_layout/_work/_temp/_runner_file_commands/step_summary_1cb22d7f-5663-41a8-9ffc-13472605c76c"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { appendFileSync } from "fs";
+ *
+ * const summaryPath = getGithubStepSummary();
+ * if (summaryPath) {
+ *   appendFileSync(summaryPath, "## Test Results\n\n✅ All tests passed\n");
+ *   // Writes Markdown content to appear in the GitHub Actions step summary
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The path to the step summary file as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubStepSummary(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_STEP_SUMMARY"];
+}
+
+/**
+ * Gets the username of the user that triggered the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_TRIGGERING_ACTOR` environment variable to the
+ * username of the user who initiated the workflow run. This value may differ
+ * from `GITHUB_ACTOR` when a workflow is re-run, as the re-run may be triggered
+ * by a different user than the original actor. Note that workflow re-runs always
+ * use the privileges of the original `github.actor`, even if the triggering actor
+ * has different privileges. Use this to identify who actually clicked the button
+ * or pushed the commit that started this specific run.
+ *
+ * @example
+ * ```typescript
+ * const triggeringActor = getGithubTriggeringActor();
+ * if (triggeringActor) {
+ *   console.log(`Triggered by: ${triggeringActor}`);
+ *   // "Triggered by: octocat"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const actor = getGithubActor();
+ * const triggeringActor = getGithubTriggeringActor();
+ * if (actor && triggeringActor && actor !== triggeringActor) {
+ *   console.log(`Re-run by ${triggeringActor} (original: ${actor})`);
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The triggering actor's username as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubTriggeringActor(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_TRIGGERING_ACTOR"];
+}
+
+/**
+ * Gets the name of the workflow.
+ *
+ * GitHub Actions sets the `GITHUB_WORKFLOW` environment variable to the name of
+ * the workflow as defined in the workflow file (e.g., "My test workflow"). If the
+ * workflow file does not specify a `name` field, this value defaults to the full
+ * path of the workflow file within the repository (e.g.,
+ * ".github/workflows/my-workflow.yml"). Use this for logging, constructing
+ * notification messages, or identifying which workflow is currently running.
+ *
+ * @example
+ * ```typescript
+ * const workflow = getGithubWorkflow();
+ * if (workflow) {
+ *   console.log(`Running workflow: ${workflow}`);
+ *   // "Running workflow: My test workflow"
+ *   // or "Running workflow: .github/workflows/ci.yml"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const workflow = getGithubWorkflow();
+ * const notificationTitle = workflow
+ *   ? `CI ${workflow} completed`
+ *   : "CI workflow completed";
+ * // Use in Slack notifications or email subjects
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workflow name or file path as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubWorkflow(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_WORKFLOW"];
+}
+
+/**
+ * Gets the full ref path to the workflow file.
+ *
+ * GitHub Actions sets the `GITHUB_WORKFLOW_REF` environment variable to the
+ * complete reference path of the workflow file (e.g.,
+ * "octocat/hello-world/.github/workflows/my-workflow.yml@refs/heads/my_branch").
+ * This includes the repository owner and name, the file path within the repository,
+ * and the git ref (branch or tag) being used. Use this to uniquely identify the
+ * exact workflow definition and version being executed, especially when working
+ * with reusable workflows or cross-repository references.
+ *
+ * @example
+ * ```typescript
+ * const workflowRef = getGithubWorkflowRef();
+ * if (workflowRef) {
+ *   console.log(`Workflow ref: ${workflowRef}`);
+ *   // "Workflow ref: octocat/hello-world/.github/workflows/my-workflow.yml@refs/heads/my_branch"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const workflowRef = getGithubWorkflowRef();
+ * const [repoPath, ref] = workflowRef?.split("@") ?? [];
+ * const workflowPath = repoPath?.split("/").slice(2).join("/");
+ * // Extract components: repoPath = "octocat/hello-world/.github/workflows/my-workflow.yml"
+ * //                     ref = "refs/heads/my_branch"
+ * //                     workflowPath = ".github/workflows/my-workflow.yml"
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workflow ref path as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubWorkflowRef(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_WORKFLOW_REF"];
+}
+
+/**
+ * Gets the commit SHA for the workflow file.
+ *
+ * GitHub Actions sets the `GITHUB_WORKFLOW_SHA` environment variable to the
+ * commit SHA of the workflow file being executed. This identifies the exact
+ * version of the workflow definition, useful for auditing, debugging, or
+ * ensuring reproducibility when workflow files change over time.
+ *
+ * @example
+ * ```typescript
+ * const workflowSha = getGithubWorkflowSha();
+ * if (workflowSha) {
+ *   console.log(`Workflow file SHA: ${workflowSha}`);
+ *   // "Workflow file SHA: abc123def456..."
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const workflowSha = getGithubWorkflowSha();
+ * const workflowRef = getGithubWorkflowRef();
+ * const repo = getGithubRepository();
+ *
+ * if (workflowSha && repo) {
+ *   const workflowFileUrl = `https://github.com/${repo.owner}/${repo.name}/blob/${workflowSha}/.github/workflows/ci.yml`;
+ *   // Link to the exact version of the workflow file used in this run
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workflow file commit SHA as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubWorkflowSha(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_WORKFLOW_SHA"];
+}
+
+/**
+ * Gets the default working directory on the runner.
+ *
+ * GitHub Actions sets the `GITHUB_WORKSPACE` environment variable to the path
+ * of the default working directory for workflow steps (e.g.,
+ * "/home/runner/work/my-repo-name/my-repo-name"). This is the default location
+ * where the repository is checked out when using the `actions/checkout` action,
+ * and the base directory from which relative paths are resolved in run steps.
+ * Use this to construct absolute paths to files, change directories, or verify
+ * the repository checkout location.
+ *
+ * @example
+ * ```typescript
+ * const workspace = getGithubWorkspace();
+ * if (workspace) {
+ *   console.log(`Working directory: ${workspace}`);
+ *   // "Working directory: /home/runner/work/my-repo-name/my-repo-name"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { join } from "path";
+ * import { readFileSync } from "fs";
+ *
+ * const workspace = getGithubWorkspace();
+ * if (workspace) {
+ *   const packageJsonPath = join(workspace, "package.json");
+ *   const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+ *   // Read files relative to the workspace root
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workspace path as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubWorkspace(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_WORKSPACE"];
+}
+
+/**
+ * Gets the architecture of the runner executing the job.
+ *
+ * GitHub Actions sets the `RUNNER_ARCH` environment variable to the CPU
+ * architecture of the runner (e.g., "X64", "ARM64"). Possible values are
+ * X86, X64, ARM, or ARM64. Use this to conditionally execute architecture-
+ * specific commands, download appropriate binaries, or validate that the
+ * job is running on the expected hardware.
+ *
+ * @example
+ * ```typescript
+ * const arch = getRunnerArch();
+ * if (arch) {
+ *   console.log(`Runner architecture: ${arch}`);
+ *   // "Runner architecture: X64"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const arch = getRunnerArch();
+ * const binaryUrl = arch
+ *   ? `https://example.com/releases/myapp-${arch.toLowerCase()}`
+ *   : undefined;
+ * // Download architecture-specific binaries: "myapp-x64" or "myapp-arm64"
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The runner architecture as a string ("X86" | "X64" | "ARM" | "ARM64"), or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getRunnerArch(
+  options?: CIDetectionOptions,
+): "X86" | "X64" | "ARM" | "ARM64" | undefined {
+  const env = getEnv(options);
+  const arch = env["RUNNER_ARCH"];
+  if (arch === "X86" || arch === "X64" || arch === "ARM" || arch === "ARM64") {
+    return arch;
+  }
+  return undefined;
+}
+
+/**
+ * Gets the debug logging status for the runner.
+ *
+ * GitHub Actions sets the `RUNNER_DEBUG` environment variable to "1" only when
+ * debug logging is enabled for the workflow run. This serves as an indicator
+ * to enable additional debugging or verbose logging in your own job steps.
+ * Check for this value to conditionally output detailed diagnostic information
+ * without polluting logs during normal runs.
+ *
+ * @example
+ * ```typescript
+ * const isDebug = isRunnerDebug();
+ * if (isDebug) {
+ *   console.log("Debug mode enabled - verbose logging active");
+ *   // Enable additional diagnostics, stack traces, or verbose output
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const isDebug = isRunnerDebug();
+ *
+ * function logDebug(message: string) {
+ *   if (isDebug) {
+ *     console.log(`[DEBUG] ${message}`);
+ *   }
+ * }
+ *
+ * logDebug("Processing item with config: " + JSON.stringify(config));
+ * // Only outputs when RUNNER_DEBUG is set
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns `true` if debug logging is enabled (RUNNER_DEBUG === "1"), `false` if not enabled, or `undefined` if not running in GitHub Actions
+ */
+export function isRunnerDebug(
+  options?: CIDetectionOptions,
+): boolean | undefined {
+  const env = getEnv(options);
+  const debug = env["RUNNER_DEBUG"];
+  if (debug === undefined) return undefined;
+  return debug === "1";
+}
+
+/**
+ * Gets the environment type of the runner executing the job.
+ *
+ * GitHub Actions sets the `RUNNER_ENVIRONMENT` environment variable to indicate
+ * whether the runner is provided by GitHub or self-managed. Possible values are
+ * "github-hosted" for runners provided by GitHub, and "self-hosted" for runners
+ * configured and maintained by the repository owner. Use this to conditionally
+ * adjust behavior based on runner capabilities, network configuration, or
+ * available software.
+ *
+ * @example
+ * ```typescript
+ * const environment = getRunnerEnvironment();
+ * if (environment) {
+ *   console.log(`Runner environment: ${environment}`);
+ *   // "Runner environment: github-hosted"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const environment = getRunnerEnvironment();
+ * if (environment === "self-hosted") {
+ *   // Use internal resources, private registries, or custom tooling
+ *   // available only on self-hosted runners
+ * } else if (environment === "github-hosted") {
+ *   // Use public resources and standard GitHub-hosted runner features
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The runner environment as a string ("github-hosted" | "self-hosted"), or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getRunnerEnvironment(
+  options?: CIDetectionOptions,
+): "github-hosted" | "self-hosted" | undefined {
+  const env = getEnv(options);
+  const environment = env["RUNNER_ENVIRONMENT"];
+  if (environment === "github-hosted" || environment === "self-hosted") {
+    return environment;
+  }
+  return undefined;
+}
+
+/**
+ * Gets the name of the runner executing the job.
+ *
+ * GitHub Actions sets the `RUNNER_NAME` environment variable to the name of the
+ * runner executing the current job (e.g., "Hosted Agent", "my-self-hosted-runner").
+ * Note that this name may not be unique within a workflow run, as multiple runners
+ * at the repository or organization level could share the same name. Use this for
+ * logging, debugging, or identifying which specific runner instance executed a job.
+ *
+ * @example
+ * ```typescript
+ * const runnerName = getRunnerName();
+ * if (runnerName) {
+ *   console.log(`Running on: ${runnerName}`);
+ *   // "Running on: Hosted Agent"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const runnerName = getRunnerName();
+ * const environment = getRunnerEnvironment();
+ * const logEntry = runnerName
+ *   ? `[${environment}] Job executed on runner: ${runnerName}`
+ *   : "[unknown runner]";
+ * // Combine with environment for detailed logging
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The runner name as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getRunnerName(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["RUNNER_NAME"];
+}
+
+/**
+ * Gets the operating system of the runner executing the job.
+ *
+ * GitHub Actions sets the `RUNNER_OS` environment variable to the operating
+ * system of the runner (e.g., "Linux", "Windows", "macOS"). Possible values
+ * are Linux, Windows, or macOS. Use this to conditionally execute OS-specific
+ * commands, handle path separators, or adjust behavior based on the platform.
+ *
+ * @example
+ * ```typescript
+ * const os = getRunnerOs();
+ * if (os) {
+ *   console.log(`Runner OS: ${os}`);
+ *   // "Runner OS: Linux"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const os = getRunnerOs();
+ * const pathSeparator = os === "Windows" ? "\\" : "/";
+ * const scriptExtension = os === "Windows" ? ".bat" : ".sh";
+ * // Adjust file paths and scripts based on the operating system
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The runner OS as a string ("Linux" | "Windows" | "macOS"), or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getRunnerOs(
+  options?: CIDetectionOptions,
+): "Linux" | "Windows" | "macOS" | undefined {
+  const env = getEnv(options);
+  const os = env["RUNNER_OS"];
+  if (os === "Linux" || os === "Windows" || os === "macOS") {
+    return os;
+  }
+  return undefined;
+}
+
+/**
+ * Gets the path to the temporary directory on the runner.
+ *
+ * GitHub Actions sets the `RUNNER_TEMP` environment variable to the path of a
+ * temporary directory available during job execution (e.g., "D:\a\_temp" or
+ * "/home/runner/work/_temp"). This directory is emptied at the beginning and
+ * end of each job, making it ideal for storing temporary files, caches, or
+ * intermediate build artifacts. Note that files may persist if the runner's
+ * user account lacks permission to delete them.
+ *
+ * @example
+ * ```typescript
+ * const tempDir = getRunnerTemp();
+ * if (tempDir) {
+ *   console.log(`Temp directory: ${tempDir}`);
+ *   // "Temp directory: /home/runner/work/_temp"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { join } from "path";
+ * import { writeFileSync } from "fs";
+ *
+ * const tempDir = getRunnerTemp();
+ * if (tempDir) {
+ *   const tempFile = join(tempDir, "build-output.zip");
+ *   writeFileSync(tempFile, zipBuffer);
+ *   // Write temporary files that are automatically cleaned up after the job
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The temporary directory path as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getRunnerTemp(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["RUNNER_TEMP"];
+}
+
+/**
+ * Gets the path to the preinstalled tools directory on GitHub-hosted runners.
+ *
+ * GitHub Actions sets the `RUNNER_TOOL_CACHE` environment variable to the path
+ * of a directory containing preinstalled tools and software packages on GitHub-
+ * hosted runners (e.g., "C:\hostedtoolcache\windows" or "/opt/hostedtoolcache").
+ * This directory contains cached versions of popular tools like Node.js, Python,
+ * Ruby, and others that can be used without downloading. Note that this variable
+ * may not be set on self-hosted runners. For more information, see GitHub-hosted
+ * runners documentation.
+ *
+ * @example
+ * ```typescript
+ * const toolCache = getRunnerToolCache();
+ * if (toolCache) {
+ *   console.log(`Tool cache: ${toolCache}`);
+ *   // "Tool cache: /opt/hostedtoolcache"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { join } from "path";
+ * import { readdirSync } from "fs";
+ *
+ * const toolCache = getRunnerToolCache();
+ * if (toolCache) {
+ *   const nodeVersions = readdirSync(join(toolCache, "node"));
+ *   console.log("Available Node versions:", nodeVersions);
+ *   // List preinstalled Node.js versions without downloading
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The tool cache directory path as a string, or `undefined` if not running in GitHub Actions, on self-hosted runners, or if the variable is not set
+ */
+export function getRunnerToolCache(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["RUNNER_TOOL_CACHE"];
+}
