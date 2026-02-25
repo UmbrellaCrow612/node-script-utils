@@ -1,5 +1,5 @@
 {
-  "name": "node-ci",
+  "name": "node-ci-cd",
   "version": "0.0.7",
   "description": "Zero-dependency utilities for detecting CI/CD environments (GitHub Actions, GitLab CI, CircleCI, Jenkins, etc.) with type-safe platform detection, environment-specific helpers, and automation scripts for Node.js",
   "main": "dist/index.js",
