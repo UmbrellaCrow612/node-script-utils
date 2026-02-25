@@ -1397,3 +1397,47 @@ export function getRunnerArch(
   }
   return undefined;
 }
+
+/**
+ * Gets the debug logging status for the runner.
+ *
+ * GitHub Actions sets the `RUNNER_DEBUG` environment variable to "1" only when
+ * debug logging is enabled for the workflow run. This serves as an indicator
+ * to enable additional debugging or verbose logging in your own job steps.
+ * Check for this value to conditionally output detailed diagnostic information
+ * without polluting logs during normal runs.
+ *
+ * @example
+ * ```typescript
+ * const isDebug = isRunnerDebug();
+ * if (isDebug) {
+ *   console.log("Debug mode enabled - verbose logging active");
+ *   // Enable additional diagnostics, stack traces, or verbose output
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const isDebug = isRunnerDebug();
+ *
+ * function logDebug(message: string) {
+ *   if (isDebug) {
+ *     console.log(`[DEBUG] ${message}`);
+ *   }
+ * }
+ *
+ * logDebug("Processing item with config: " + JSON.stringify(config));
+ * // Only outputs when RUNNER_DEBUG is set
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns `true` if debug logging is enabled (RUNNER_DEBUG === "1"), `false` if not enabled, or `undefined` if not running in GitHub Actions
+ */
+export function isRunnerDebug(
+  options?: CIDetectionOptions,
+): boolean | undefined {
+  const env = getEnv(options);
+  const debug = env["RUNNER_DEBUG"];
+  if (debug === undefined) return undefined;
+  return debug === "1";
+}
