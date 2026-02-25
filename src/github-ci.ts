@@ -388,3 +388,31 @@ export function getGithubEventPath(
   const env = getEnv(options);
   return env["GITHUB_EVENT_PATH"];
 }
+
+/**
+ * Gets the GitHub GraphQL API URL.
+ *
+ * This environment variable returns the base URL for the GitHub GraphQL API.
+ * For GitHub.com, this is https://api.github.com/graphql. For GitHub Enterprise Server,
+ * this will be the GraphQL API URL of the enterprise instance.
+ *
+ * @example
+ * ```typescript
+ * const graphqlUrl = getGithubGraphqlUrl();
+ * if (graphqlUrl) {
+ *   console.log(`GitHub GraphQL API: ${graphqlUrl}`);
+ *   // Outputs: "https://api.github.com/graphql"
+ *   // Outputs: "https://github.my-enterprise.com/api/graphql"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The GitHub GraphQL API URL, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubGraphqlUrl(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_GRAPHQL_URL"];
+}
