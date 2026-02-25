@@ -1313,3 +1313,87 @@ export function getGithubWorkflowSha(
   const env = getEnv(options);
   return env["GITHUB_WORKFLOW_SHA"];
 }
+
+/**
+ * Gets the default working directory on the runner.
+ *
+ * GitHub Actions sets the `GITHUB_WORKSPACE` environment variable to the path
+ * of the default working directory for workflow steps (e.g.,
+ * "/home/runner/work/my-repo-name/my-repo-name"). This is the default location
+ * where the repository is checked out when using the `actions/checkout` action,
+ * and the base directory from which relative paths are resolved in run steps.
+ * Use this to construct absolute paths to files, change directories, or verify
+ * the repository checkout location.
+ *
+ * @example
+ * ```typescript
+ * const workspace = getGithubWorkspace();
+ * if (workspace) {
+ *   console.log(`Working directory: ${workspace}`);
+ *   // "Working directory: /home/runner/work/my-repo-name/my-repo-name"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { join } from "path";
+ * import { readFileSync } from "fs";
+ *
+ * const workspace = getGithubWorkspace();
+ * if (workspace) {
+ *   const packageJsonPath = join(workspace, "package.json");
+ *   const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+ *   // Read files relative to the workspace root
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workspace path as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubWorkspace(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_WORKSPACE"];
+}
+
+/**
+ * Gets the architecture of the runner executing the job.
+ *
+ * GitHub Actions sets the `RUNNER_ARCH` environment variable to the CPU
+ * architecture of the runner (e.g., "X64", "ARM64"). Possible values are
+ * X86, X64, ARM, or ARM64. Use this to conditionally execute architecture-
+ * specific commands, download appropriate binaries, or validate that the
+ * job is running on the expected hardware.
+ *
+ * @example
+ * ```typescript
+ * const arch = getRunnerArch();
+ * if (arch) {
+ *   console.log(`Runner architecture: ${arch}`);
+ *   // "Runner architecture: X64"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const arch = getRunnerArch();
+ * const binaryUrl = arch
+ *   ? `https://example.com/releases/myapp-${arch.toLowerCase()}`
+ *   : undefined;
+ * // Download architecture-specific binaries: "myapp-x64" or "myapp-arm64"
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The runner architecture as a string ("X86" | "X64" | "ARM" | "ARM64"), or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getRunnerArch(
+  options?: CIDetectionOptions,
+): "X86" | "X64" | "ARM" | "ARM64" | undefined {
+  const env = getEnv(options);
+  const arch = env["RUNNER_ARCH"];
+  if (arch === "X86" || arch === "X64" || arch === "ARM" || arch === "ARM64") {
+    return arch;
+  }
+  return undefined;
+}
