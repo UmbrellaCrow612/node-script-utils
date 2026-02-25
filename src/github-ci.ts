@@ -1234,3 +1234,82 @@ export function getGithubWorkflow(
   const env = getEnv(options);
   return env["GITHUB_WORKFLOW"];
 }
+
+/**
+ * Gets the full ref path to the workflow file.
+ *
+ * GitHub Actions sets the `GITHUB_WORKFLOW_REF` environment variable to the
+ * complete reference path of the workflow file (e.g.,
+ * "octocat/hello-world/.github/workflows/my-workflow.yml@refs/heads/my_branch").
+ * This includes the repository owner and name, the file path within the repository,
+ * and the git ref (branch or tag) being used. Use this to uniquely identify the
+ * exact workflow definition and version being executed, especially when working
+ * with reusable workflows or cross-repository references.
+ *
+ * @example
+ * ```typescript
+ * const workflowRef = getGithubWorkflowRef();
+ * if (workflowRef) {
+ *   console.log(`Workflow ref: ${workflowRef}`);
+ *   // "Workflow ref: octocat/hello-world/.github/workflows/my-workflow.yml@refs/heads/my_branch"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const workflowRef = getGithubWorkflowRef();
+ * const [repoPath, ref] = workflowRef?.split("@") ?? [];
+ * const workflowPath = repoPath?.split("/").slice(2).join("/");
+ * // Extract components: repoPath = "octocat/hello-world/.github/workflows/my-workflow.yml"
+ * //                     ref = "refs/heads/my_branch"
+ * //                     workflowPath = ".github/workflows/my-workflow.yml"
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workflow ref path as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubWorkflowRef(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_WORKFLOW_REF"];
+}
+
+/**
+ * Gets the commit SHA for the workflow file.
+ *
+ * GitHub Actions sets the `GITHUB_WORKFLOW_SHA` environment variable to the
+ * commit SHA of the workflow file being executed. This identifies the exact
+ * version of the workflow definition, useful for auditing, debugging, or
+ * ensuring reproducibility when workflow files change over time.
+ *
+ * @example
+ * ```typescript
+ * const workflowSha = getGithubWorkflowSha();
+ * if (workflowSha) {
+ *   console.log(`Workflow file SHA: ${workflowSha}`);
+ *   // "Workflow file SHA: abc123def456..."
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const workflowSha = getGithubWorkflowSha();
+ * const workflowRef = getGithubWorkflowRef();
+ * const repo = getGithubRepository();
+ *
+ * if (workflowSha && repo) {
+ *   const workflowFileUrl = `https://github.com/${repo.owner}/${repo.name}/blob/${workflowSha}/.github/workflows/ci.yml`;
+ *   // Link to the exact version of the workflow file used in this run
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workflow file commit SHA as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubWorkflowSha(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_WORKFLOW_SHA"];
+}
