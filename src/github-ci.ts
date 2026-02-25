@@ -780,3 +780,36 @@ export function getGithubRefType(
   }
   return undefined;
 }
+
+/**
+ * Gets the owner and repository name for the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REPOSITORY` environment variable to the full
+ * repository identifier in the format `owner/repo-name` (e.g., "octocat/Hello-World").
+ *
+ * @example
+ * ```typescript
+ * const repo = getGithubRepository();
+ * if (repo) {
+ *   const [owner, name] = repo.split("/");
+ *   console.log(`Owner: ${owner}, Repo: ${name}`);
+ *   // Owner: octocat, Repo: Hello-World
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const repo = getGithubRepository();
+ * const apiUrl = repo ? `https://api.github.com/repos/${repo}/issues` : undefined;
+ * // Construct API URLs dynamically based on current repository
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The repository identifier in "owner/name" format, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRepository(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_REPOSITORY"];
+}
