@@ -1009,3 +1009,150 @@ export function getGithubRunId(
   const env = getEnv(options);
   return env["GITHUB_RUN_ID"];
 }
+
+/**
+ * Gets the run number for the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_RUN_NUMBER` environment variable to a unique
+ * number for each run of a particular workflow in a repository (e.g., 3). This
+ * number begins at 1 for the workflow's first run and increments with each new
+ * run. This number remains constant even if the workflow run is re-run. Use this
+ * for sequential versioning, build numbering, or human-readable run identification.
+ *
+ * @example
+ * ```typescript
+ * const runNumber = getGithubRunNumber();
+ * if (runNumber) {
+ *   console.log(`Build #${runNumber}`);
+ *   // "Build #3"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const runNumber = getGithubRunNumber();
+ * const versionTag = runNumber ? `v1.0.${runNumber}` : "v1.0.0";
+ * // Create version tags based on workflow run number
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workflow run number as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRunNumber(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_RUN_NUMBER"];
+}
+
+/**
+ * Gets the URL of the GitHub server.
+ *
+ * GitHub Actions sets the `GITHUB_SERVER_URL` environment variable to the base
+ * URL of the GitHub instance (e.g., "https://github.com" for GitHub.com or
+ * "https://github.mycompany.com" for GitHub Enterprise Server). Use this to
+ * construct API URLs, generate links to resources, or handle both GitHub.com
+ * and Enterprise Server environments dynamically.
+ *
+ * @example
+ * ```typescript
+ * const serverUrl = getGithubServerUrl();
+ * if (serverUrl) {
+ *   console.log(`GitHub server: ${serverUrl}`);
+ *   // "GitHub server: https://github.com"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const serverUrl = getGithubServerUrl();
+ * const apiBaseUrl = serverUrl
+ *   ? `${serverUrl}/api/v3` // GitHub Enterprise
+ *   : "https://api.github.com"; // Fallback to GitHub.com
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The GitHub server URL as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubServerUrl(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_SERVER_URL"];
+}
+
+/**
+ * Gets the commit SHA that triggered the workflow.
+ *
+ * GitHub Actions sets the `GITHUB_SHA` environment variable to the commit SHA
+ * that triggered the workflow run (e.g., "ffac537e6cbbf934b08745a378932722df287a53").
+ * The specific commit referenced depends on the event type that triggered the
+ * workflow. For pull request events, this is the merge commit SHA; for push
+ * events, it is the commit that was pushed. Use this for checking out specific
+ * commits, generating version identifiers, or linking to commit history.
+ *
+ * @example
+ * ```typescript
+ * const sha = getGithubSha();
+ * if (sha) {
+ *   console.log(`Commit SHA: ${sha}`);
+ *   // "Commit SHA: ffac537e6cbbf934b08745a378932722df287a53"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const sha = getGithubSha();
+ * const shortSha = sha ? sha.substring(0, 7) : undefined;
+ * const commitUrl = sha && serverUrl && repo
+ *   ? `${serverUrl}/${repo}/commit/${sha}`
+ *   : undefined;
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The commit SHA as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubSha(options?: CIDetectionOptions): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_SHA"];
+}
+
+/**
+ * Gets the path to the step summary file for workflow commands.
+ *
+ * GitHub Actions sets the `GITHUB_STEP_SUMMARY` environment variable to the path
+ * of a file where job summaries can be written using workflow commands (e.g.,
+ * "/home/runner/_layout/_work/_temp/_runner_file_commands/step_summary_1cb22d7f-5663-41a8-9ffc-13472605c76c").
+ * This path is unique to the current step and changes for each step in a job.
+ * Write Markdown content to this file to add custom summaries that appear in
+ * the GitHub Actions UI. For more information, see Workflow commands for GitHub Actions.
+ *
+ * @example
+ * ```typescript
+ * const summaryPath = getGithubStepSummary();
+ * if (summaryPath) {
+ *   console.log(`Summary file: ${summaryPath}`);
+ *   // "Summary file: /home/runner/_layout/_work/_temp/_runner_file_commands/step_summary_1cb22d7f-5663-41a8-9ffc-13472605c76c"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { appendFileSync } from "fs";
+ *
+ * const summaryPath = getGithubStepSummary();
+ * if (summaryPath) {
+ *   appendFileSync(summaryPath, "## Test Results\n\n✅ All tests passed\n");
+ *   // Writes Markdown content to appear in the GitHub Actions step summary
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The path to the step summary file as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubStepSummary(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_STEP_SUMMARY"];
+}
