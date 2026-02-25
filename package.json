@@ -1,11 +1,12 @@
 {
-  "name": "node-script-utils",
-  "version": "0.0.1",
+  "name": "node-js-script-utils",
+  "version": "0.0.2",
   "description": "Zero-dependency utilities for detecting CI/CD environments (GitHub Actions, GitLab CI, CircleCI, Jenkins, etc.) with type-safe platform detection, environment-specific helpers, and automation scripts for Node.js",
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
-    "*"
+    "dist",
+    "README.md"
   ],
   "scripts": {},
   "keywords": [

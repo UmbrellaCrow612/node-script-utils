@@ -1,3 +1,3 @@
-# Offers common functionality used in scripting for node js
+# Offers common functionality used in scripting for Node.js
 
-These contain common functions na dhelpers that help with writing safe scripts in node js
+These contain common functions and helpers that help with writing safe scripts in Node.js.
