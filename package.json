@@ -1,17 +1,36 @@
 {
-  "name": "script-utils",
+  "name": "node-script-utils",
   "version": "0.0.1",
-  "description": "Contains helpers for writing scripts in node js",
+  "description": "Zero-dependency utilities for detecting CI/CD environments (GitHub Actions, GitLab CI, CircleCI, Jenkins, etc.) with type-safe platform detection, environment-specific helpers, and automation scripts for Node.js",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [
-    "Scripting",
-    "utils"
+  "types": "index.d.ts",
+  "files": [
+    "*"
   ],
+  "scripts": {},
+  "keywords": [
+    "ci",
+    "cd",
+    "ci-cd",
+    "continuous-integration",
+    "github-actions",
+    "gitlab-ci",
+    "circleci",
+    "jenkins",
+    "travis",
+    "azure-pipelines",
+    "environment-detection",
+    "devops",
+    "automation",
+    "typescript",
+    "zero-dependency"
+  ],
+  "type": "module",
   "author": "Yousaf Wazir",
   "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "devDependencies": {
     "@types/node": "^25.3.0",
     "typescript": "^5.9.3"
