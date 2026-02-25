@@ -1,3 +1,7 @@
+export * from "./ci.js";
+export * from "./command.js";
+export * from "./github-ci.js";
+
 /**
  * Callback that can return nothing or a promise to await
  */

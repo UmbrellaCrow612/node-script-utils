@@ -1,6 +1,6 @@
 {
   "name": "node-js-script-utils",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Zero-dependency utilities for detecting CI/CD environments (GitHub Actions, GitLab CI, CircleCI, Jenkins, etc.) with type-safe platform detection, environment-specific helpers, and automation scripts for Node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -26,6 +26,24 @@
     "typescript",
     "zero-dependency"
   ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./ci": {
+      "import": "./dist/ci.js",
+      "types": "./dist/ci.d.ts"
+    },
+    "./command": {
+      "import": "./dist/command.js",
+      "types": "./dist/command.d.ts"
+    },
+    "./github-ci": {
+      "import": "./dist/github-ci.js",
+      "types": "./dist/github-ci.d.ts"
+    }
+  },
   "type": "module",
   "author": "Yousaf Wazir",
   "license": "ISC",
