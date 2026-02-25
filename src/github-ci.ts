@@ -2,7 +2,32 @@
 // GitHub Actions Specific Helpers
 // ============================================================================
 
-import { isInsideGithubAction, type CIDetectionOptions } from "./ci.js";
+import { type CIDetectionOptions } from "./ci.js";
+
+/**
+ * Helper to get environment object (cached pattern)
+ */
+function getEnv(options?: CIDetectionOptions): NodeJS.ProcessEnv {
+  return options?.env ?? process.env;
+}
+
+/**
+ * Detects if running inside GitHub Actions
+ *
+ * GitHub Actions sets the `GITHUB_ACTIONS` environment variable to "true"
+ *
+ * @example
+ * ```typescript
+ * if (isInsideGithubAction()) {
+ *   console.log("Running in GitHub Actions");
+ *   const token = getGithubToken(); // Safe to call
+ * }
+ * ```
+ */
+export function isInsideGithubAction(options?: CIDetectionOptions): boolean {
+  const env = getEnv(options);
+  return env["GITHUB_ACTIONS"] === "true";
+}
 
 /**
  * Gets the GitHub token from environment
@@ -27,7 +52,7 @@ export function getGithubToken(options?: CIDetectionOptions): string {
     throw new Error("Not running inside GitHub Actions");
   }
 
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   const token = env["GITHUB_TOKEN"] ?? env["GH_TOKEN"];
 
   if (!token) {
@@ -45,7 +70,7 @@ export function getGithubToken(options?: CIDetectionOptions): string {
 export function getGithubEventName(
   options?: CIDetectionOptions,
 ): string | undefined {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_EVENT_NAME"];
 }
 
@@ -57,12 +82,15 @@ export function getGithubEventName(
 export function getGithubRepository(
   options?: CIDetectionOptions,
 ): { owner: string; repo: string } | null {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   const fullRepo = env["GITHUB_REPOSITORY"];
 
   if (!fullRepo) return null;
 
-  const [owner, repo] = fullRepo.split("/");
+  const parts = fullRepo.split("/");
+  if (parts.length !== 2) return null;
+
+  const [owner, repo] = parts;
   if (!owner || !repo) return null;
 
   return { owner, repo };
@@ -74,7 +102,7 @@ export function getGithubRepository(
 export function getGithubRunId(
   options?: CIDetectionOptions,
 ): string | undefined {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_RUN_ID"];
 }
 
@@ -84,7 +112,7 @@ export function getGithubRunId(
 export function getGithubRunAttempt(
   options?: CIDetectionOptions,
 ): string | undefined {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_RUN_ATTEMPT"];
 }
 
@@ -94,7 +122,7 @@ export function getGithubRunAttempt(
 export function getGithubWorkflow(
   options?: CIDetectionOptions,
 ): string | undefined {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_WORKFLOW"];
 }
 
@@ -102,7 +130,7 @@ export function getGithubWorkflow(
  * Gets the GitHub Actions job name
  */
 export function getGithubJob(options?: CIDetectionOptions): string | undefined {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_JOB"];
 }
 
@@ -112,7 +140,7 @@ export function getGithubJob(options?: CIDetectionOptions): string | undefined {
 export function getGithubActor(
   options?: CIDetectionOptions,
 ): string | undefined {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_ACTOR"];
 }
 
@@ -120,7 +148,7 @@ export function getGithubActor(
  * Gets the Git ref (branch or tag) that triggered the workflow
  */
 export function getGithubRef(options?: CIDetectionOptions): string | undefined {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_REF"];
 }
 
@@ -130,7 +158,7 @@ export function getGithubRef(options?: CIDetectionOptions): string | undefined {
 export function getGithubRefName(
   options?: CIDetectionOptions,
 ): string | undefined {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_REF_NAME"];
 }
 
@@ -138,7 +166,7 @@ export function getGithubRefName(
  * Gets the commit SHA that triggered the workflow
  */
 export function getGithubSha(options?: CIDetectionOptions): string | undefined {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_SHA"];
 }
 
@@ -148,7 +176,7 @@ export function getGithubSha(options?: CIDetectionOptions): string | undefined {
 export function getGithubEventPath(
   options?: CIDetectionOptions,
 ): string | undefined {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_EVENT_PATH"];
 }
 
@@ -210,8 +238,10 @@ export function getGithubPullRequestNumber(
 ): number | null {
   if (!isGithubPullRequest(options)) return null;
 
-  const env = options?.env ?? process.env;
-  const prNumber = env["GITHUB_REF"]?.match(/refs\/pull\/(\d+)\/merge/)?.[1];
+  const env = getEnv(options);
+  const prNumber = env["GITHUB_REF"]?.match(
+    /refs\/pull\/(\d+)\/(merge|head)/,
+  )?.[1];
   return prNumber ? parseInt(prNumber, 10) : null;
 }
 
@@ -219,7 +249,7 @@ export function getGithubPullRequestNumber(
  * Gets GitHub Actions specific debug state
  */
 export function isGithubDebug(options?: CIDetectionOptions): boolean {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["RUNNER_DEBUG"] === "1" || env["ACTIONS_STEP_DEBUG"] === "true";
 }
 
@@ -227,7 +257,7 @@ export function isGithubDebug(options?: CIDetectionOptions): boolean {
  * Gets the GitHub API URL (for GitHub Enterprise Server support)
  */
 export function getGithubApiUrl(options?: CIDetectionOptions): string {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_API_URL"] ?? "https://api.github.com";
 }
 
@@ -235,7 +265,7 @@ export function getGithubApiUrl(options?: CIDetectionOptions): string {
  * Gets the GitHub server URL (for GitHub Enterprise Server support)
  */
 export function getGithubServerUrl(options?: CIDetectionOptions): string {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_SERVER_URL"] ?? "https://github.com";
 }
 
@@ -245,6 +275,6 @@ export function getGithubServerUrl(options?: CIDetectionOptions): string {
 export function getGithubWorkspace(
   options?: CIDetectionOptions,
 ): string | undefined {
-  const env = options?.env ?? process.env;
+  const env = getEnv(options);
   return env["GITHUB_WORKSPACE"];
 }
