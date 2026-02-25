@@ -168,8 +168,6 @@ export function getGithubActorId(
  * For GitHub.com, this is https://api.github.com. For GitHub Enterprise Server,
  * this will be the API URL of the enterprise instance.
  *
- * @see {https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#default-environment-variables}
- *
  * @example
  * ```typescript
  * const apiUrl = getGithubApiUrl();
@@ -189,4 +187,173 @@ export function getGithubApiUrl(
 ): string | undefined {
   const env = getEnv(options);
   return env["GITHUB_API_URL"];
+}
+
+/**
+ * Gets the name of the base ref or target branch of the pull request in a workflow run.
+ *
+ * This is only set when the event that triggers a workflow run is either
+ * `pull_request` or `pull_request_target`. For example, `main`.
+ *
+ * @example
+ * ```typescript
+ * const baseRef = getGithubBaseRef();
+ * if (baseRef) {
+ *   console.log(`Target branch: ${baseRef}`);
+ *   // Outputs: "main"
+ *   // Outputs: "develop"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The base ref or target branch name, or `undefined` if not running in
+ *          GitHub Actions, not in a pull request event, or if the variable is not set
+ */
+export function getGithubBaseRef(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_BASE_REF"];
+}
+
+/**
+ * Gets the path on the runner to the file that sets variables from workflow commands.
+ *
+ * The path to this file is unique to the current step and changes for each step
+ * in a job. This file is used to set environment variables that can be passed
+ * to subsequent steps in the workflow.
+ *
+ * @example
+ * ```typescript
+ * const envFilePath = getGithubEnv();
+ * if (envFilePath) {
+ *   console.log(`Env file: ${envFilePath}`);
+ *   // Outputs: "/home/runner/work/_temp/_runner_file_commands/set_env_87406d6e-4979-4d42-98e1-3dab1f48b13a"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The path to the environment file, or `undefined` if not running in
+ *          GitHub Actions or if the variable is not set
+ */
+export function getGithubEnv(options?: CIDetectionOptions): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_ENV"];
+}
+
+/**
+ * All possible event names that can trigger a GitHub Actions workflow.
+ *
+ * @see {https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows}
+ */
+export type GithubEventName =
+  | "push"
+  | "pull_request"
+  | "pull_request_target"
+  | "workflow_dispatch"
+  | "schedule"
+  | "release"
+  | "issue_comment"
+  | "issues"
+  | "create"
+  | "delete"
+  | "fork"
+  | "star"
+  | "watch"
+  | "workflow_run"
+  | "workflow_call"
+  | "check_run"
+  | "check_suite"
+  | "deployment"
+  | "deployment_status"
+  | "discussion"
+  | "merge_group"
+  | "gollum"
+  | "label"
+  | "milestone"
+  | "page_build"
+  | "public"
+  | "registry_package"
+  | "repository_dispatch"
+  | "status"
+  | "branch_protection_rule"
+  | "secret_scanning_alert"
+  | "dependabot_alert"
+  | "merge_queue"
+  | "projects"
+  | "project_card"
+  | "project_column"
+  | "auto_merge_enabled"
+  | "auto_merge_disabled"
+  | "pull_request_review"
+  | "pull_request_review_comment"
+  | "pull_request_review_thread"
+  | "code_scanning_alert"
+  | "commit_comment"
+  | "member"
+  | "membership"
+  | "team_add"
+  | "repository"
+  | "organization"
+  | "org_block"
+  | "sponsorship"
+  | "meta"
+  | "transfers"
+  | "ping";
+
+/**
+ * Gets the name of the event that triggered the workflow.
+ *
+ * Common event names include:
+ * - `push` - When commits are pushed to a branch or tag
+ * - `pull_request` - When a pull request is opened, synchronized, or closed
+ * - `pull_request_target` - When a PR targets the base repository (runs in base context)
+ * - `workflow_dispatch` - When manually triggered via GitHub UI, CLI, or API
+ * - `schedule` - When triggered by a cron schedule
+ * - `release` - When a release is published, edited, or deleted
+ * - `issue_comment` - When a comment is added to an issue or pull request
+ * - `issues` - When an issue is opened, edited, labeled, or closed
+ * - `create` - When a branch or tag is created
+ * - `delete` - When a branch or tag is deleted
+ * - `fork` - When a repository is forked
+ * - `star` - When a repository is starred
+ * - `watch` - When someone starts watching a repository
+ * - `workflow_run` - When another workflow completes
+ * - `workflow_call` - When a reusable workflow is called
+ * - `check_run` - When a check run is created or completed
+ * - `check_suite` - When a check suite is completed
+ * - `deployment` - When a deployment is created
+ * - `deployment_status` - When a deployment status changes
+ * - `discussion` - When a discussion is created or modified
+ * - `merge_group` - When a pull request is added to a merge queue
+ * - `gollum` - When a wiki page is created or updated
+ * - `label` - When a label is created, edited, or deleted
+ * - `milestone` - When a milestone is created or closed
+ * - `page_build` - When a GitHub Pages site is built
+ * - `public` - When a repository is made public
+ * - `registry_package` - When a package is published or updated
+ * - `repository_dispatch` - When triggered via REST API
+ * - `status` - When a commit status changes
+ * - `branch_protection_rule` - When branch protection rules change
+ * - `secret_scanning_alert` - When a secret is detected in the repository
+ *
+ * @example
+ * ```typescript
+ * const eventName = getGithubEventName();
+ * if (eventName === "pull_request") {
+ *   console.log("Processing PR");
+ * } else if (eventName === "push") {
+ *   console.log("Processing push");
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The name of the triggering event, or `undefined` if not running in
+ *          GitHub Actions or if the variable is not set
+ */
+export function getGithubEventName(
+  options?: CIDetectionOptions,
+): GithubEventName | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_EVENT_NAME"] as GithubEventName | undefined;
 }
