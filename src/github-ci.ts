@@ -3,8 +3,22 @@
  * @see {https://docs.github.com/en/actions/reference/workflows-and-actions/variables}
  */
 
-import { type CIDetectionOptions } from "./ci.js";
 import { getEnv } from "./env.js";
+
+/**
+ * Options for CI detection utilities
+ */
+export type CIDetectionOptions = {
+  /**
+   * Allow override detection for testing purposes
+   */
+  env?: Record<string, string | undefined>;
+
+  /**
+   * Strict mode - only return true if absolutely certain
+   */
+  strict?: boolean;
+};
 
 /**
  * Detects if running inside GitHub Actions
@@ -853,4 +867,74 @@ export function getGithubRepositoryId(
 ): string | undefined {
   const env = getEnv(options);
   return env["GITHUB_REPOSITORY_ID"];
+}
+
+/**
+ * Gets the repository owner's name from the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REPOSITORY_OWNER` environment variable to the
+ * owner of the repository (e.g., "octocat"). This is the first part of the full
+ * repository identifier `owner/repo-name`.
+ *
+ * @example
+ * ```typescript
+ * const owner = getGithubRepositoryOwner();
+ * if (owner) {
+ *   console.log(`Repository owner: ${owner}`);
+ *   // "Repository owner: octocat"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const owner = getGithubRepositoryOwner();
+ * const apiUrl = owner
+ *   ? `https://api.github.com/users/${owner}/repos`
+ *   : undefined;
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The repository owner name as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRepositoryOwner(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_REPOSITORY_OWNER"];
+}
+
+/**
+ * Gets the repository owner's numeric account ID from the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REPOSITORY_OWNER_ID` environment variable to the
+ * unique numeric identifier of the repository owner (e.g., 1234567). This is
+ * distinct from the owner's name (e.g., "octocat") and remains constant even if
+ * the username changes. Use this for API calls that require the owner ID rather
+ * than the username.
+ *
+ * @example
+ * ```typescript
+ * const ownerId = getGithubRepositoryOwnerId();
+ * if (ownerId) {
+ *   console.log(`Owner ID: ${ownerId}`);
+ *   // "Owner ID: 1234567"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const ownerId = getGithubRepositoryOwnerId();
+ * const apiUrl = ownerId
+ *   ? `https://api.github.com/user/${ownerId}`
+ *   : undefined;
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The numeric owner ID as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRepositoryOwnerId(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_REPOSITORY_OWNER_ID"];
 }
