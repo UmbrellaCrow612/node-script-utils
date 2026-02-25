@@ -1562,3 +1562,88 @@ export function getRunnerOs(
   }
   return undefined;
 }
+
+/**
+ * Gets the path to the temporary directory on the runner.
+ *
+ * GitHub Actions sets the `RUNNER_TEMP` environment variable to the path of a
+ * temporary directory available during job execution (e.g., "D:\a\_temp" or
+ * "/home/runner/work/_temp"). This directory is emptied at the beginning and
+ * end of each job, making it ideal for storing temporary files, caches, or
+ * intermediate build artifacts. Note that files may persist if the runner's
+ * user account lacks permission to delete them.
+ *
+ * @example
+ * ```typescript
+ * const tempDir = getRunnerTemp();
+ * if (tempDir) {
+ *   console.log(`Temp directory: ${tempDir}`);
+ *   // "Temp directory: /home/runner/work/_temp"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { join } from "path";
+ * import { writeFileSync } from "fs";
+ *
+ * const tempDir = getRunnerTemp();
+ * if (tempDir) {
+ *   const tempFile = join(tempDir, "build-output.zip");
+ *   writeFileSync(tempFile, zipBuffer);
+ *   // Write temporary files that are automatically cleaned up after the job
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The temporary directory path as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getRunnerTemp(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["RUNNER_TEMP"];
+}
+
+/**
+ * Gets the path to the preinstalled tools directory on GitHub-hosted runners.
+ *
+ * GitHub Actions sets the `RUNNER_TOOL_CACHE` environment variable to the path
+ * of a directory containing preinstalled tools and software packages on GitHub-
+ * hosted runners (e.g., "C:\hostedtoolcache\windows" or "/opt/hostedtoolcache").
+ * This directory contains cached versions of popular tools like Node.js, Python,
+ * Ruby, and others that can be used without downloading. Note that this variable
+ * may not be set on self-hosted runners. For more information, see GitHub-hosted
+ * runners documentation.
+ *
+ * @example
+ * ```typescript
+ * const toolCache = getRunnerToolCache();
+ * if (toolCache) {
+ *   console.log(`Tool cache: ${toolCache}`);
+ *   // "Tool cache: /opt/hostedtoolcache"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import { join } from "path";
+ * import { readdirSync } from "fs";
+ *
+ * const toolCache = getRunnerToolCache();
+ * if (toolCache) {
+ *   const nodeVersions = readdirSync(join(toolCache, "node"));
+ *   console.log("Available Node versions:", nodeVersions);
+ *   // List preinstalled Node.js versions without downloading
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The tool cache directory path as a string, or `undefined` if not running in GitHub Actions, on self-hosted runners, or if the variable is not set
+ */
+export function getRunnerToolCache(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["RUNNER_TOOL_CACHE"];
+}
