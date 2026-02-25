@@ -820,3 +820,37 @@ export function getGithubRepository(
 
   return { owner, name };
 }
+
+/**
+ * Gets the numeric ID of the repository.
+ *
+ * GitHub Actions sets the `GITHUB_REPOSITORY_ID` environment variable to the unique
+ * numeric identifier of the repository. This is distinct from the repository name
+ * (e.g., 123456789 vs "octocat/Hello-World"). Use this for API calls that require
+ * the repository ID rather than the full name.
+ *
+ * @example
+ * ```typescript
+ * const repoId = getGithubRepositoryId();
+ * if (repoId) {
+ *   console.log(`Repository ID: ${repoId}`);
+ *   // Use in GraphQL queries or legacy API endpoints requiring numeric IDs
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const repoId = getGithubRepositoryId();
+ * const cacheKey = repoId ? `build-cache-${repoId}` : "build-cache-default";
+ * // Create unique cache keys scoped to specific repositories
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The numeric repository ID as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRepositoryId(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_REPOSITORY_ID"];
+}
