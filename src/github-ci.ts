@@ -4,13 +4,7 @@
  */
 
 import { type CIDetectionOptions } from "./ci.js";
-
-/**
- * Helper to get environment object (cached pattern)
- */
-function getEnv(options?: CIDetectionOptions): NodeJS.ProcessEnv {
-  return options?.env ?? process.env;
-}
+import { getEnv } from "./env.js";
 
 /**
  * Detects if running inside GitHub Actions
