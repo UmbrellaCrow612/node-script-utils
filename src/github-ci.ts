@@ -741,3 +741,42 @@ export function isRefProtected(options?: CIDetectionOptions): boolean {
   const env = getEnv(options);
   return env["GITHUB_REF_PROTECTED"] === "true";
 }
+
+/**
+ * Gets the type of Git ref that triggered the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REF_TYPE` environment variable to indicate whether
+ * the workflow was triggered by a branch push or a tag push. Valid values are "branch" or "tag".
+ *
+ * @example
+ * ```typescript
+ * const refType = getGithubRefType();
+ * if (refType === "branch") {
+ *   console.log("Triggered by branch push");
+ *   // Run branch-specific logic
+ * } else if (refType === "tag") {
+ *   console.log("Triggered by tag push");
+ *   // Run release/tag-specific logic
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const refType = getGithubRefType();
+ * const version = refType === "tag" ? getGithubRef()?.replace("refs/tags/", "") : "dev";
+ * // Use tag name as version, fallback to "dev" for branch triggers
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns "branch" | "tag" | `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRefType(
+  options?: CIDetectionOptions,
+): "branch" | "tag" | undefined {
+  const env = getEnv(options);
+  const refType = env["GITHUB_REF_TYPE"];
+  if (refType === "branch" || refType === "tag") {
+    return refType;
+  }
+  return undefined;
+}
