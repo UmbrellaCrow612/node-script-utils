@@ -608,8 +608,6 @@ export function getGithubPath(
  * - Tags: `refs/tags/<tag_name>` (e.g., "refs/tags/v1.0.0")
  * - Pull requests: `refs/pull/<pr_number>/merge` (e.g., "refs/pull/42/merge")
  *
- * @see {@link https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables}
- *
  * @example
  * ```typescript
  * const ref = getGithubRef();
@@ -658,4 +656,56 @@ export function getGithubPath(
 export function getGithubRef(options?: CIDetectionOptions): string | undefined {
   const env = getEnv(options);
   return env["GITHUB_REF"];
+}
+
+/**
+ * Gets the short ref name of the branch or tag that triggered the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REF_NAME` environment variable which contains:
+ * - The human-readable branch or tag name as shown on GitHub (e.g., "feature-branch-1", "v1.0.0")
+ * - For unmerged pull requests: `<pr_number>/merge` (e.g., "42/merge")
+ * - The short version of `GITHUB_REF` without the `refs/heads/`, `refs/tags/`, or `refs/pull/` prefix
+ * - Useful for display purposes, constructing URLs, or referencing resources by simple name
+ *
+ * @example
+ * ```typescript
+ * const refName = getGithubRefName();
+ * if (refName) {
+ *   console.log(`Running on: ${refName}`);
+ *   // Outputs: "feature-branch-1"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Use in deployment naming or artifact versioning
+ * const refName = getGithubRefName();
+ * if (refName) {
+ *   const sanitized = refName.replace(/[^a-zA-Z0-9-]/g, "-");
+ *   const artifactName = `app-${sanitized}.zip`;
+ *   console.log(`Creating artifact: ${artifactName}`);
+ *   // Outputs: "app-feature-branch-1.zip" or "app-42-merge.zip"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Detect if running on a pull request merge branch
+ * const refName = getGithubRefName();
+ * if (refName?.includes("/merge")) {
+ *   const prNumber = refName.split("/")[0];
+ *   console.log(`Testing PR #${prNumber} merge commit`);
+ *   // Outputs: "Testing PR #42 merge commit"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The short ref name, or `undefined` if not running in GitHub Actions
+ *          or if the variable is not set
+ */
+export function getGithubRefName(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_REF_NAME"];
 }
