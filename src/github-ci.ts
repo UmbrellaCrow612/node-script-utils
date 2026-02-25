@@ -938,3 +938,74 @@ export function getGithubRepositoryOwnerId(
   const env = getEnv(options);
   return env["GITHUB_REPOSITORY_OWNER_ID"];
 }
+
+/**
+ * Gets the number of days that workflow run logs and artifacts are retained.
+ *
+ * GitHub Actions sets the `GITHUB_RETENTION_DAYS` environment variable to the
+ * retention period configured for the repository (e.g., 90). This value determines
+ * how long workflow run logs and artifacts are kept before automatic deletion.
+ * Use this to calculate expiration dates or validate retention policies.
+ *
+ * @example
+ * ```typescript
+ * const retentionDays = getGithubRetentionDays();
+ * if (retentionDays) {
+ *   console.log(`Logs retained for ${retentionDays} days`);
+ *   // "Logs retained for 90 days"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const retentionDays = getGithubRetentionDays();
+ * const expirationDate = retentionDays
+ *   ? new Date(Date.now() + parseInt(retentionDays) * 24 * 60 * 60 * 1000)
+ *   : undefined;
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The retention period in days as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRetentionDays(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_RETENTION_DAYS"];
+}
+
+/**
+ * Gets the unique identifier for the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_RUN_ID` environment variable to a unique number
+ * for each workflow run within a repository (e.g., 1658821493). This ID remains
+ * constant even if the workflow run is re-run, making it suitable for identifying
+ * specific workflow executions across retries. Use this for tracking, logging,
+ * or constructing API URLs related to the workflow run.
+ *
+ * @example
+ * ```typescript
+ * const runId = getGithubRunId();
+ * if (runId) {
+ *   console.log(`Workflow run ID: ${runId}`);
+ *   // "Workflow run ID: 1658821493"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const runId = getGithubRunId();
+ * const runUrl = runId
+ *   ? `https://github.com/${owner}/${repo}/actions/runs/${runId}`
+ *   : undefined;
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workflow run ID as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubRunId(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_RUN_ID"];
+}
