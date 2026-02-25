@@ -1156,3 +1156,81 @@ export function getGithubStepSummary(
   const env = getEnv(options);
   return env["GITHUB_STEP_SUMMARY"];
 }
+
+/**
+ * Gets the username of the user that triggered the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_TRIGGERING_ACTOR` environment variable to the
+ * username of the user who initiated the workflow run. This value may differ
+ * from `GITHUB_ACTOR` when a workflow is re-run, as the re-run may be triggered
+ * by a different user than the original actor. Note that workflow re-runs always
+ * use the privileges of the original `github.actor`, even if the triggering actor
+ * has different privileges. Use this to identify who actually clicked the button
+ * or pushed the commit that started this specific run.
+ *
+ * @example
+ * ```typescript
+ * const triggeringActor = getGithubTriggeringActor();
+ * if (triggeringActor) {
+ *   console.log(`Triggered by: ${triggeringActor}`);
+ *   // "Triggered by: octocat"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const actor = getGithubActor();
+ * const triggeringActor = getGithubTriggeringActor();
+ * if (actor && triggeringActor && actor !== triggeringActor) {
+ *   console.log(`Re-run by ${triggeringActor} (original: ${actor})`);
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The triggering actor's username as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubTriggeringActor(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_TRIGGERING_ACTOR"];
+}
+
+/**
+ * Gets the name of the workflow.
+ *
+ * GitHub Actions sets the `GITHUB_WORKFLOW` environment variable to the name of
+ * the workflow as defined in the workflow file (e.g., "My test workflow"). If the
+ * workflow file does not specify a `name` field, this value defaults to the full
+ * path of the workflow file within the repository (e.g.,
+ * ".github/workflows/my-workflow.yml"). Use this for logging, constructing
+ * notification messages, or identifying which workflow is currently running.
+ *
+ * @example
+ * ```typescript
+ * const workflow = getGithubWorkflow();
+ * if (workflow) {
+ *   console.log(`Running workflow: ${workflow}`);
+ *   // "Running workflow: My test workflow"
+ *   // or "Running workflow: .github/workflows/ci.yml"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const workflow = getGithubWorkflow();
+ * const notificationTitle = workflow
+ *   ? `CI ${workflow} completed`
+ *   : "CI workflow completed";
+ * // Use in Slack notifications or email subjects
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The workflow name or file path as a string, or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubWorkflow(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_WORKFLOW"];
+}
