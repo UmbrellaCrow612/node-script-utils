@@ -105,3 +105,58 @@ export function getGithubActionRepository(
   const env = getEnv(options);
   return env["GITHUB_ACTION_REPOSITORY"];
 }
+
+/**
+ * Gets the name of the person or app that initiated the workflow.
+ *
+ * This environment variable contains the username of the user or the name of the
+ * app that triggered the workflow run.
+ *
+ * @example
+ * ```typescript
+ * const actor = getGithubActor();
+ * if (actor) {
+ *   console.log(`Workflow triggered by: ${actor}`);
+ *   // Outputs: "octocat"
+ *   // Outputs: "github-actions[bot]"
+ *   // Outputs: "my-github-app"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The username of the actor who triggered the workflow, or `undefined`
+ *          if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubActor(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_ACTOR"];
+}
+
+/**
+ * Gets the account ID of the person or app that triggered the initial workflow run.
+ *
+ * This environment variable contains the unique numeric account ID of the actor.
+ * Note that this is different from the actor username (GITHUB_ACTOR).
+ *
+ * @example
+ * ```typescript
+ * const actorId = getGithubActorId();
+ * if (actorId) {
+ *   console.log(`Actor ID: ${actorId}`);
+ *   // Outputs: "1234567"
+ *   // Outputs: "9876543"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The numeric account ID of the actor as a string, or `undefined`
+ *          if not running in GitHub Actions or if the variable is not set
+ */
+export function getGithubActorId(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_ACTOR_ID"];
+}
