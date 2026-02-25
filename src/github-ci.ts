@@ -1,6 +1,7 @@
-// ============================================================================
-// GitHub Actions Specific Helpers
-// ============================================================================
+/**
+ * GitHub Actions Specific Helpers
+ * @see {https://docs.github.com/en/actions/reference/workflows-and-actions/variables}
+ */
 
 import { type CIDetectionOptions } from "./ci.js";
 
@@ -30,251 +31,83 @@ export function isInsideGithubAction(options?: CIDetectionOptions): boolean {
 }
 
 /**
- * Gets the GitHub token from environment
+ * Gets the name of the action currently running, or the id of a step.
  *
- * @throws Error if not running in GitHub Actions or token not available
+ * GitHub Actions sets the `GITHUB_ACTION` environment variable which contains:
+ * - For an action: `__repo-owner_name-of-action-repo` (special characters removed)
+ * - For a step running a script without an id: `__run`
+ * - For duplicate scripts/actions in the same job: a suffix with sequence number (e.g., `__run_2`, `actionscheckout2`)
  *
  * @example
  * ```typescript
- * try {
- *   const token = getGithubToken();
- *   // Use token for API calls
- * } catch (e) {
- *   console.error("GitHub token not available");
+ * const actionName = getGithubAction();
+ * if (actionName) {
+ *   console.log(`Running action: ${actionName}`);
+ *   // Outputs: "__run", "__run_2", "__owner_repo-action", "actionscheckout2", etc.
  * }
  * ```
- */
-export function getGithubToken(options?: CIDetectionOptions): string {
-  // By default, require being inside GitHub Actions unless explicitly disabled
-  const skipCiCheck = options?.strict === false;
-
-  if (!skipCiCheck && !isInsideGithubAction(options)) {
-    throw new Error("Not running inside GitHub Actions");
-  }
-
-  const env = getEnv(options);
-  const token = env["GITHUB_TOKEN"] ?? env["GH_TOKEN"];
-
-  if (!token) {
-    throw new Error(
-      "GitHub token not found in environment (GITHUB_TOKEN or GH_TOKEN)",
-    );
-  }
-
-  return token;
-}
-
-/**
- * Gets GitHub Actions event name (push, pull_request, etc.)
- */
-export function getGithubEventName(
-  options?: CIDetectionOptions,
-): string | undefined {
-  const env = getEnv(options);
-  return env["GITHUB_EVENT_NAME"];
-}
-
-/**
- * Gets the GitHub repository owner and name
  *
- * @returns Object with owner and repo, or null if not available
+ * @param options - Optional CI detection options
+ * @returns The action/step identifier, or `undefined` if not running in GitHub Actions or if the variable is not set
  */
-export function getGithubRepository(
-  options?: CIDetectionOptions,
-): { owner: string; repo: string } | null {
-  const env = getEnv(options);
-  const fullRepo = env["GITHUB_REPOSITORY"];
-
-  if (!fullRepo) return null;
-
-  const parts = fullRepo.split("/");
-  if (parts.length !== 2) return null;
-
-  const [owner, repo] = parts;
-  if (!owner || !repo) return null;
-
-  return { owner, repo };
-}
-
-/**
- * Gets the GitHub Actions run ID
- */
-export function getGithubRunId(
+export function getGithubAction(
   options?: CIDetectionOptions,
 ): string | undefined {
   const env = getEnv(options);
-  return env["GITHUB_RUN_ID"];
+  return env["GITHUB_ACTION"];
 }
 
 /**
- * Gets the GitHub Actions run attempt number
- */
-export function getGithubRunAttempt(
-  options?: CIDetectionOptions,
-): string | undefined {
-  const env = getEnv(options);
-  return env["GITHUB_RUN_ATTEMPT"];
-}
-
-/**
- * Gets the GitHub Actions workflow name
- */
-export function getGithubWorkflow(
-  options?: CIDetectionOptions,
-): string | undefined {
-  const env = getEnv(options);
-  return env["GITHUB_WORKFLOW"];
-}
-
-/**
- * Gets the GitHub Actions job name
- */
-export function getGithubJob(options?: CIDetectionOptions): string | undefined {
-  const env = getEnv(options);
-  return env["GITHUB_JOB"];
-}
-
-/**
- * Gets the GitHub user who triggered the workflow
- */
-export function getGithubActor(
-  options?: CIDetectionOptions,
-): string | undefined {
-  const env = getEnv(options);
-  return env["GITHUB_ACTOR"];
-}
-
-/**
- * Gets the Git ref (branch or tag) that triggered the workflow
- */
-export function getGithubRef(options?: CIDetectionOptions): string | undefined {
-  const env = getEnv(options);
-  return env["GITHUB_REF"];
-}
-
-/**
- * Gets the Git ref name (short version without refs/heads/ or refs/tags/)
- */
-export function getGithubRefName(
-  options?: CIDetectionOptions,
-): string | undefined {
-  const env = getEnv(options);
-  return env["GITHUB_REF_NAME"];
-}
-
-/**
- * Gets the commit SHA that triggered the workflow
- */
-export function getGithubSha(options?: CIDetectionOptions): string | undefined {
-  const env = getEnv(options);
-  return env["GITHUB_SHA"];
-}
-
-/**
- * Gets the path to the GitHub event payload JSON file
- */
-export function getGithubEventPath(
-  options?: CIDetectionOptions,
-): string | undefined {
-  const env = getEnv(options);
-  return env["GITHUB_EVENT_PATH"];
-}
-
-/**
- * Reads and parses the GitHub event payload (async)
+ * Gets the path where an action is located.
  *
- * @returns The parsed event payload or null if not available
- */
-export async function getGithubEventPayload<T = Record<string, unknown>>(
-  options?: CIDetectionOptions,
-): Promise<T | null> {
-  const path = getGithubEventPath(options);
-  if (!path) return null;
-
-  try {
-    const fs = await import("node:fs/promises");
-    const content = await fs.readFile(path, "utf-8");
-    return JSON.parse(content) as T;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Reads and parses the GitHub event payload (sync)
+ * This property is only supported in composite actions. You can use this path
+ * to change directories to where the action is located and access other files
+ * in that same repository.
  *
- * @returns The parsed event payload or null if not available
- */
-export function getGithubEventPayloadSync<T = Record<string, unknown>>(
-  options?: CIDetectionOptions,
-): T | null {
-  const path = getGithubEventPath(options);
-  if (!path) return null;
-
-  try {
-    const fs = require("node:fs");
-    const content = fs.readFileSync(path, "utf-8");
-    return JSON.parse(content) as T;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Checks if running in a GitHub Actions pull request context
- */
-export function isGithubPullRequest(options?: CIDetectionOptions): boolean {
-  const eventName = getGithubEventName(options);
-  return eventName === "pull_request" || eventName === "pull_request_target";
-}
-
-/**
- * Gets the PR number if running in a pull request context
+ * @example
+ * ```typescript
+ * const actionPath = getGithubActionPath();
+ * if (actionPath) {
+ *   console.log(`Action located at: ${actionPath}`);
+ *   // Outputs: "/home/runner/work/_actions/repo-owner/name-of-action-repo/v1"
+ * }
+ * ```
  *
- * @returns PR number or null if not in PR context
+ * @param options - Optional CI detection options
+ * @returns The filesystem path to the action, or `undefined` if not running in
+ *          GitHub Actions, not in a composite action, or if the variable is not set
  */
-export function getGithubPullRequestNumber(
-  options?: CIDetectionOptions,
-): number | null {
-  if (!isGithubPullRequest(options)) return null;
-
-  const env = getEnv(options);
-  const prNumber = env["GITHUB_REF"]?.match(
-    /refs\/pull\/(\d+)\/(merge|head)/,
-  )?.[1];
-  return prNumber ? parseInt(prNumber, 10) : null;
-}
-
-/**
- * Gets GitHub Actions specific debug state
- */
-export function isGithubDebug(options?: CIDetectionOptions): boolean {
-  const env = getEnv(options);
-  return env["RUNNER_DEBUG"] === "1" || env["ACTIONS_STEP_DEBUG"] === "true";
-}
-
-/**
- * Gets the GitHub API URL (for GitHub Enterprise Server support)
- */
-export function getGithubApiUrl(options?: CIDetectionOptions): string {
-  const env = getEnv(options);
-  return env["GITHUB_API_URL"] ?? "https://api.github.com";
-}
-
-/**
- * Gets the GitHub server URL (for GitHub Enterprise Server support)
- */
-export function getGithubServerUrl(options?: CIDetectionOptions): string {
-  const env = getEnv(options);
-  return env["GITHUB_SERVER_URL"] ?? "https://github.com";
-}
-
-/**
- * Gets the workspace path where the repository is checked out
- */
-export function getGithubWorkspace(
+export function getGithubActionPath(
   options?: CIDetectionOptions,
 ): string | undefined {
   const env = getEnv(options);
-  return env["GITHUB_WORKSPACE"];
+  return env["GITHUB_ACTION_PATH"];
+}
+
+/**
+ * Gets the owner and repository name of the action being executed.
+ *
+ * For a step executing an action, this environment variable contains the owner
+ * and repository name in the format `owner/repo`.
+ *
+ * @example
+ * ```typescript
+ * const actionRepo = getGithubActionRepository();
+ * if (actionRepo) {
+ *   console.log(`Action repository: ${actionRepo}`);
+ *   // Outputs: "actions/checkout"
+ *   // Outputs: "octokit/request-action"
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The owner and repository name of the action (e.g., "actions/checkout"),
+ *          or `undefined` if not running in GitHub Actions, not executing an action,
+ *          or if the variable is not set
+ */
+export function getGithubActionRepository(
+  options?: CIDetectionOptions,
+): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_ACTION_REPOSITORY"];
 }

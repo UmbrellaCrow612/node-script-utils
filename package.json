@@ -8,7 +8,9 @@
     "dist",
     "README.md"
   ],
-  "scripts": {},
+  "scripts": {
+    "build": "npx tsc"
+  },
   "keywords": [
     "ci",
     "cd",
