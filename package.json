@@ -1,6 +1,6 @@
 {
   "name": "node-github-actions",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Zero-dependency utilities for detecting and working with GitHub Actions environments, featuring type-safe platform checks, streamlined workflow automation helpers, and lightweight CI/CD integration tools for Node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,6 +30,10 @@
   ],
   "type": "module",
   "author": "Yousaf Wazir",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UmbrellaCrow612/node-github-actions.git"
+  },
   "license": "ISC",
   "engines": {
     "node": ">=18.0.0"
