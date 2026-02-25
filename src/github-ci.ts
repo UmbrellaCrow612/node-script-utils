@@ -591,3 +591,71 @@ export function getGithubPath(
   const env = getEnv(options);
   return env["GITHUB_PATH"];
 }
+
+/**
+ * Gets the fully-formed ref of the branch or tag that triggered the workflow run.
+ *
+ * GitHub Actions sets the `GITHUB_REF` environment variable which contains:
+ * - For push events: `refs/heads/<branch_name>` or `refs/tags/<tag_name>`
+ * - For pull_request events (not merged): `refs/pull/<pr_number>/merge`
+ * - For pull_request events (merged): `refs/heads/<head_branch>`
+ * - For pull_request_target events: ref from the base branch (e.g., `refs/heads/main`)
+ * - For release events: `refs/tags/<tag_name>`
+ * - Only set if a branch or tag is available for the event type
+ *
+ * Format variations:
+ * - Branches: `refs/heads/<branch_name>` (e.g., "refs/heads/feature-branch-1")
+ * - Tags: `refs/tags/<tag_name>` (e.g., "refs/tags/v1.0.0")
+ * - Pull requests: `refs/pull/<pr_number>/merge` (e.g., "refs/pull/42/merge")
+ *
+ * @see {@link https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables}
+ *
+ * @example
+ * ```typescript
+ * const ref = getGithubRef();
+ * if (ref) {
+ *   console.log(`Triggered by: ${ref}`);
+ *   // Outputs: "refs/heads/feature-branch-1"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Extract branch or tag name from the ref
+ * const ref = getGithubRef();
+ * if (ref?.startsWith("refs/heads/")) {
+ *   const branchName = ref.replace("refs/heads/", "");
+ *   console.log(`Branch: ${branchName}`);
+ *   // Outputs: "feature-branch-1"
+ * } else if (ref?.startsWith("refs/tags/")) {
+ *   const tagName = ref.replace("refs/tags/", "");
+ *   console.log(`Tag: ${tagName}`);
+ *   // Outputs: "v1.0.0"
+ * } else if (ref?.startsWith("refs/pull/")) {
+ *   console.log("Running in a pull request context");
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Determine event type from ref pattern
+ * const ref = getGithubRef();
+ * const isTag = ref?.startsWith("refs/tags/");
+ * const isBranch = ref?.startsWith("refs/heads/");
+ * const isPullRequest = ref?.startsWith("refs/pull/");
+ *
+ * if (isTag) {
+ *   await deployToProduction();
+ * } else if (isBranch) {
+ *   await runTests();
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The fully-formed ref string, or `undefined` if not running in GitHub Actions,
+ *          if no branch/tag is available for the event type, or if the variable is not set
+ */
+export function getGithubRef(options?: CIDetectionOptions): string | undefined {
+  const env = getEnv(options);
+  return env["GITHUB_REF"];
+}
