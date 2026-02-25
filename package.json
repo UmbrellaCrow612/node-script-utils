@@ -1,7 +1,7 @@
 {
-  "name": "universal-node-ci-cd",
-  "version": "0.0.7",
-  "description": "Zero-dependency utilities for detecting CI/CD environments (GitHub Actions, GitLab CI, CircleCI, Jenkins, etc.) with type-safe platform detection, environment-specific helpers, and automation scripts for Node.js",
+  "name": "github-actions",
+  "version": "0.0.1",
+  "description": "Zero-dependency utilities for detecting and working with GitHub Actions environments, featuring type-safe platform checks, streamlined workflow automation helpers, and lightweight CI/CD integration tools for Node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
