@@ -1441,3 +1441,47 @@ export function isRunnerDebug(
   if (debug === undefined) return undefined;
   return debug === "1";
 }
+
+/**
+ * Gets the environment type of the runner executing the job.
+ *
+ * GitHub Actions sets the `RUNNER_ENVIRONMENT` environment variable to indicate
+ * whether the runner is provided by GitHub or self-managed. Possible values are
+ * "github-hosted" for runners provided by GitHub, and "self-hosted" for runners
+ * configured and maintained by the repository owner. Use this to conditionally
+ * adjust behavior based on runner capabilities, network configuration, or
+ * available software.
+ *
+ * @example
+ * ```typescript
+ * const environment = getRunnerEnvironment();
+ * if (environment) {
+ *   console.log(`Runner environment: ${environment}`);
+ *   // "Runner environment: github-hosted"
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const environment = getRunnerEnvironment();
+ * if (environment === "self-hosted") {
+ *   // Use internal resources, private registries, or custom tooling
+ *   // available only on self-hosted runners
+ * } else if (environment === "github-hosted") {
+ *   // Use public resources and standard GitHub-hosted runner features
+ * }
+ * ```
+ *
+ * @param options - Optional CI detection options
+ * @returns The runner environment as a string ("github-hosted" | "self-hosted"), or `undefined` if not running in GitHub Actions or if the variable is not set
+ */
+export function getRunnerEnvironment(
+  options?: CIDetectionOptions,
+): "github-hosted" | "self-hosted" | undefined {
+  const env = getEnv(options);
+  const environment = env["RUNNER_ENVIRONMENT"];
+  if (environment === "github-hosted" || environment === "self-hosted") {
+    return environment;
+  }
+  return undefined;
+}
