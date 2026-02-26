@@ -60,13 +60,28 @@ export class TimeoutError extends Error {
 
 /**
  * Creates a timeout promise that rejects after specified milliseconds
+ * Returns both the promise and a cleanup function to clear the timeout
  */
-function createTimeoutPromise(ms: number): Promise<never> {
-  return new Promise((_, reject) => {
-    setTimeout(() => {
+function createTimeoutPromise(ms: number): {
+  timeoutPromise: Promise<any>;
+  clear: () => void;
+} {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  let _resolve: (value: unknown) => void;
+
+  const timeoutPromise = new Promise((resolve, reject) => {
+    _resolve = resolve;
+    timeoutId = setTimeout(() => {
       reject(new TimeoutError(`Operation timed out after ${ms}ms`, ms));
     }, ms);
   });
+
+  const clear = () => {
+    clearTimeout(timeoutId);
+    _resolve(true);
+  };
+
+  return { timeoutPromise, clear };
 }
 
 /**
@@ -116,14 +131,18 @@ export async function safeRun(
   let mainError: Error | null = null;
 
   try {
-    // Run before hook if provided
     if (onBefore) {
       await onBefore();
     }
 
-    // Execute main callback with optional timeout
     if (timeoutMs && timeoutMs > 0) {
-      await Promise.race([callback(), createTimeoutPromise(timeoutMs)]);
+      const { timeoutPromise, clear } = createTimeoutPromise(timeoutMs);
+
+      try {
+        await Promise.race([callback(), timeoutPromise]);
+      } finally {
+        clear();
+      }
     } else {
       await callback();
     }
