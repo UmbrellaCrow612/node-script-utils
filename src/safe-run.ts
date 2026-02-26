@@ -59,6 +59,17 @@ export class TimeoutError extends Error {
 }
 
 /**
+ * Creates a timeout promise that rejects after specified milliseconds
+ */
+function createTimeoutPromise(ms: number): Promise<never> {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new TimeoutError(`Operation timed out after ${ms}ms`, ms));
+    }, ms);
+  });
+}
+
+/**
  * Safely executes an asynchronous callback with lifecycle hooks and error handling.
  *
  * Provides a structured way to run async operations with optional hooks for
@@ -101,17 +112,6 @@ export async function safeRun(
     exitFailCode = 1,
     timeoutMs,
   } = options;
-
-  /**
-   * Creates a timeout promise that rejects after specified milliseconds
-   */
-  function createTimeoutPromise(ms: number): Promise<never> {
-    return new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new TimeoutError(`Operation timed out after ${ms}ms`, ms));
-      }, ms);
-    });
-  }
 
   let mainError: Error | null = null;
 
