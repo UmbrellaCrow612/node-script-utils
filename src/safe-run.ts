@@ -9,36 +9,6 @@ export type PromisableCallback = () => void | Promise<void>;
 export type ErrorCallback = (error: Error) => void | Promise<void>;
 
 /**
- * Type-safe exit codes following Unix conventions
- * - 0: Success
- * - 1: General error
- * - 2: Misuse of shell builtins
- * - 126: Command invoked cannot execute
- * - 127: Command not found
- * - 128+n: Fatal error signal "n"
- * - 130: Script terminated by Ctrl+C
- * - 255: Exit status out of range
- */
-export type ExitCode =
-  | 0
-  | 1
-  | 2
-  | 126
-  | 127
-  | 128
-  | 129
-  | 130
-  | 131
-  | 132
-  | 133
-  | 134
-  | 135
-  | 136
-  | 137
-  | 255
-  | (number & { __brand: "ExitCode" });
-
-/**
  * Additional options to change the behaviour of safe run
  */
 export type SafeRunOptions = {
@@ -66,7 +36,7 @@ export type SafeRunOptions = {
   /**
    * Custom exit code to provide to the process should you choose to exit.
    */
-  exitFailCode?: ExitCode;
+  exitFailCode?: number;
 
   /**
    * Timeout in milliseconds for the main callback execution.
@@ -128,31 +98,9 @@ export async function safeRun(
     onAfter,
     onFail,
     exitOnFailed = false,
-    exitFailCode = 1 as ExitCode,
+    exitFailCode = 1,
     timeoutMs,
   } = options;
-
-  /**
-   * Safely executes a hook, catching and logging any errors without crashing
-   */
-  async function runHook(
-    hook: PromisableCallback | ErrorCallback | undefined,
-    error?: Error,
-  ): Promise<void> {
-    if (!hook) return;
-
-    try {
-      if (error && hook.length > 0) {
-        // It's an error callback
-        await (hook as ErrorCallback)(error);
-      } else {
-        await (hook as PromisableCallback)();
-      }
-    } catch (hookError) {
-      // Log hook errors but don't let them crash the execution flow
-      console.error(`Hook execution failed:`, hookError);
-    }
-  }
 
   /**
    * Creates a timeout promise that rejects after specified milliseconds
@@ -169,7 +117,9 @@ export async function safeRun(
 
   try {
     // Run before hook if provided
-    await runHook(onBefore);
+    if (onBefore) {
+      await onBefore();
+    }
 
     // Execute main callback with optional timeout
     if (timeoutMs && timeoutMs > 0) {
@@ -179,12 +129,16 @@ export async function safeRun(
     }
 
     // Run after hook on success
-    await runHook(onAfter);
+    if (onAfter) {
+      await onAfter();
+    }
   } catch (error) {
     mainError = error instanceof Error ? error : new Error(String(error));
 
     // Run fail hook with error context
-    await runHook(onFail, mainError);
+    if (onFail) {
+      await onFail(mainError);
+    }
 
     // Exit process if configured to do so
     if (exitOnFailed) {
